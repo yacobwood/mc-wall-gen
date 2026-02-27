@@ -1,0 +1,984 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Minecraft Wall Randomizer</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=VT323&display=swap" rel="stylesheet">
+  <style>
+    *, *::before, *::after { box-sizing: border-box; }
+
+    body {
+      margin: 0; padding: 0;
+      background: #111; color: #d4d4d4;
+      font-family: 'VT323', monospace; font-size: 18px;
+      display: flex; height: 100vh; overflow: hidden;
+    }
+
+    /* === SIDEBAR === */
+    #sidebar {
+      width: 290px; min-width: 290px;
+      background: #1e1e1e; border-right: 2px solid #333;
+      display: flex; flex-direction: column;
+      overflow-y: auto; overflow-x: hidden;
+    }
+    #sidebar::-webkit-scrollbar { width: 6px; }
+    #sidebar::-webkit-scrollbar-track { background: #1a1a1a; }
+    #sidebar::-webkit-scrollbar-thumb { background: #444; border-radius: 3px; }
+
+    .sidebar-header {
+      background: #161616; border-bottom: 2px solid #333;
+      padding: 14px 16px 12px; flex-shrink: 0;
+    }
+    .sidebar-header h1 { margin: 0; font-size: 22px; color: #7dc33a; letter-spacing: 1px; }
+    .sidebar-header p { margin: 4px 0 0; font-size: 14px; color: #777; }
+
+    .sidebar-section { padding: 12px 16px; border-bottom: 1px solid #2a2a2a; }
+    .sidebar-section h2 { margin: 0 0 10px; font-size: 16px; color: #aaa; text-transform: uppercase; letter-spacing: 2px; }
+
+    /* === CONTROLS === */
+    .controls-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+    .control-group { display: flex; flex-direction: column; gap: 3px; }
+    .control-group label { font-size: 14px; color: #888; }
+    .control-group input[type="number"] {
+      background: #2a2a2a; border: 1px solid #444;
+      color: #d4d4d4; font-family: 'VT323', monospace; font-size: 20px;
+      padding: 4px 8px; width: 100%; border-radius: 3px; outline: none;
+    }
+    .control-group input[type="number"]:focus { border-color: #5a8a20; }
+
+    .block-size-row { display: flex; flex-direction: column; gap: 4px; margin-top: 8px; }
+    .block-size-label-row { display: flex; justify-content: space-between; align-items: center; }
+    .block-size-label-row label { font-size: 14px; color: #888; }
+    #blockSizeVal { font-size: 16px; color: #7dc33a; }
+
+    input[type="range"] {
+      -webkit-appearance: none; appearance: none;
+      width: 100%; height: 4px; background: #333; border-radius: 2px; outline: none; cursor: pointer;
+    }
+    input[type="range"]::-webkit-slider-thumb {
+      -webkit-appearance: none; appearance: none;
+      width: 14px; height: 14px; border-radius: 2px; background: #5a8a20; cursor: pointer;
+    }
+    input[type="range"]::-webkit-slider-thumb:hover { background: #7dc33a; }
+
+    /* === BUTTONS === */
+    .btn-row { display: flex; flex-direction: column; gap: 6px; }
+    button {
+      font-family: 'VT323', monospace; font-size: 20px;
+      border: none; cursor: pointer; padding: 8px 12px;
+      border-radius: 3px; transition: background 0.1s, transform 0.05s; letter-spacing: 1px;
+    }
+    button:active { transform: translateY(1px); }
+    .btn-primary { background: #4a7a18; color: #d4ffaa; border-bottom: 3px solid #2e5010; }
+    .btn-primary:hover { background: #5a9020; }
+    .btn-secondary { background: #2a2a2a; color: #aaa; border-bottom: 3px solid #1a1a1a; }
+    .btn-secondary:hover { background: #363636; color: #ccc; }
+    .small-btn-row { display: flex; gap: 6px; }
+    .small-btn-row button { flex: 1; font-size: 16px; padding: 5px 8px; }
+
+    .seed-row { display: flex; gap: 6px; align-items: center; margin-top: 4px; }
+    .seed-label { font-size: 14px; color: #777; white-space: nowrap; }
+    #seedInput {
+      background: #1a1a1a; border: 1px solid #333;
+      color: #7dc33a; font-family: 'VT323', monospace; font-size: 18px;
+      padding: 3px 8px; width: 0; flex: 1; border-radius: 3px; outline: none; letter-spacing: 1px;
+    }
+    #seedInput:focus { border-color: #5a8a20; }
+
+    /* === PRESET SELECT === */
+    select {
+      background: #2a2a2a; border: 1px solid #444;
+      color: #d4d4d4; font-family: 'VT323', monospace; font-size: 18px;
+      padding: 5px 8px; width: 100%; border-radius: 3px; outline: none; cursor: pointer;
+    }
+    select:focus { border-color: #5a8a20; }
+
+    /* === PALETTE UI === */
+    .category { border-bottom: 1px solid #222; }
+    .category-header {
+      display: flex; align-items: center; gap: 8px;
+      padding: 8px 16px; cursor: pointer; user-select: none;
+      background: #1a1a1a; font-size: 15px; color: #999; letter-spacing: 1px;
+    }
+    .category-header:hover { background: #222; color: #bbb; }
+    .cat-arrow { font-size: 12px; color: #666; }
+    .cat-count { margin-left: auto; font-size: 13px; color: #555; }
+    .block-list.collapsed { display: none; }
+
+    /* Block row — vertical layout */
+    .block-row {
+      display: flex; flex-direction: column;
+      padding: 5px 14px 5px 18px;
+    }
+    .block-row:hover { background: #252525; }
+
+    .block-row-top {
+      display: flex; align-items: center; gap: 7px; cursor: pointer;
+    }
+
+    .block-preview {
+      width: 24px; height: 24px; flex-shrink: 0;
+      image-rendering: pixelated; border: 1px solid #333;
+    }
+    .block-row input[type="checkbox"] {
+      accent-color: #5a8a20; width: 14px; height: 14px; flex-shrink: 0; cursor: pointer;
+    }
+    .block-name {
+      flex: 1; font-size: 16px; color: #bbb;
+      white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+    }
+    .block-row.selected .block-name { color: #d4d4d4; }
+
+    .pct-display {
+      font-size: 16px; color: #7dc33a;
+      min-width: 38px; text-align: right; flex-shrink: 0;
+    }
+
+    /* Percentage slider row */
+    .block-slider-wrap {
+      display: none;
+      padding-left: 45px;
+      margin-top: 4px;
+      align-items: center;
+      gap: 0;
+    }
+    .block-row.selected .block-slider-wrap { display: flex; }
+
+    .pct-slider {
+      flex: 1; height: 4px;
+      accent-color: #5a8a20;
+    }
+    .pct-slider::-webkit-slider-thumb { background: #5a8a20; }
+
+    /* === CANVAS AREA === */
+    #canvas-area {
+      flex: 1; overflow: auto;
+      display: flex; flex-direction: column; align-items: flex-start;
+      padding: 20px; background: #111;
+    }
+    #canvas-area::-webkit-scrollbar { width: 8px; height: 8px; }
+    #canvas-area::-webkit-scrollbar-track { background: #111; }
+    #canvas-area::-webkit-scrollbar-thumb { background: #333; border-radius: 4px; }
+    #canvas-toolbar { display: flex; align-items: center; gap: 10px; margin-bottom: 10px; flex-wrap: wrap; }
+    .canvas-info { font-size: 15px; color: #555; }
+    #wall-canvas {
+      image-rendering: pixelated; image-rendering: crisp-edges;
+      display: block; border: 2px solid #333;
+      box-shadow: 0 4px 20px rgba(0,0,0,0.5);
+    }
+    #empty-msg { display: none; color: #555; font-size: 20px; padding: 40px; }
+    .spacer { height: 4px; }
+  </style>
+</head>
+<body>
+
+<aside id="sidebar">
+  <div class="sidebar-header">
+    <h1>Wall Randomizer</h1>
+    <p>Minecraft block wall generator</p>
+  </div>
+
+  <div class="sidebar-section">
+    <h2>Dimensions</h2>
+    <div class="controls-grid">
+      <div class="control-group">
+        <label>Width (blocks)</label>
+        <input type="number" id="widthInput" value="12" min="1" max="64">
+      </div>
+      <div class="control-group">
+        <label>Height (blocks)</label>
+        <input type="number" id="heightInput" value="8" min="1" max="32">
+      </div>
+    </div>
+    <div class="block-size-row">
+      <div class="block-size-label-row">
+        <label>Block size</label>
+        <span id="blockSizeVal">32px</span>
+      </div>
+      <input type="range" id="blockSizeRange" min="0" max="4" value="2" step="1">
+    </div>
+  </div>
+
+  <div class="sidebar-section">
+    <div class="btn-row">
+      <button class="btn-primary" id="btnRandomize">&#x1F3B2; Randomize Wall</button>
+      <div class="small-btn-row">
+        <button class="btn-secondary" id="btnRerender">&#x21BA; Same Seed</button>
+        <button class="btn-secondary" id="btnExport">&#x1F4BE; Export PNG</button>
+      </div>
+    </div>
+    <div class="spacer"></div>
+    <div class="seed-row">
+      <span class="seed-label">Seed:</span>
+      <input type="text" id="seedInput" placeholder="hex seed" maxlength="8" spellcheck="false">
+    </div>
+  </div>
+
+  <div class="sidebar-section">
+    <h2>Presets</h2>
+    <select id="presetSelect">
+      <option value="">— load a preset —</option>
+      <optgroup label="Classic">
+        <option value="dungeon">Dungeon / Ruins</option>
+        <option value="nether_fortress">Nether Fortress</option>
+        <option value="deepslate_cave">Deep Cave</option>
+        <option value="desert_temple">Desert Temple</option>
+        <option value="ocean_monument">Ocean Monument</option>
+        <option value="polished_mix">Polished Mix</option>
+        <option value="mossy_ruin">Mossy Ruin</option>
+      </optgroup>
+      <optgroup label="Community Palettes">
+        <option value="back_from_the_mines">Back from the Mines</option>
+        <option value="overgrown_path">Overgrown Path</option>
+        <option value="woodcutter">Woodcutter</option>
+        <option value="grove_of_ashes">Grove of Ashes</option>
+        <option value="ghost_valley">Ghost Valley</option>
+        <option value="italian_path">Italian Path</option>
+        <option value="undergrove">Undergrove</option>
+        <option value="barrel_roll">Barrel Roll</option>
+        <option value="old_garage">Old Garage</option>
+        <option value="rusty_roof">Rusty Roof</option>
+        <option value="warmer_wood">Warmer Wood</option>
+        <option value="coal_house">Coal House</option>
+        <option value="magical_fungi">Magical Fungi</option>
+        <option value="candy_leaves">Candy Leaves</option>
+        <option value="cabin_shower">Cabin Shower</option>
+        <option value="steampunk_blacksmith">Steampunk Blacksmith</option>
+        <option value="mumbo_mountain">Mumbo Mountain</option>
+        <option value="meadow_in_the_city">Meadow in the City</option>
+      </optgroup>
+    </select>
+  </div>
+
+  <div class="sidebar-section" style="padding-bottom:0; border-bottom:none;">
+    <h2>Block Palette</h2>
+  </div>
+  <div id="paletteContainer"></div>
+  <div style="height:16px; flex-shrink:0;"></div>
+</aside>
+
+<main id="canvas-area">
+  <div id="canvas-toolbar">
+    <span class="canvas-info" id="canvasInfo"></span>
+  </div>
+  <div id="empty-msg">Select at least one block from the palette.</div>
+  <canvas id="wall-canvas"></canvas>
+</main>
+
+<script>
+// ============================================================
+// RNG
+// ============================================================
+function mulberry32(seed) {
+  seed = seed >>> 0;
+  return function() {
+    seed = (seed + 0x6D2B79F5) >>> 0;
+    let t = Math.imul(seed ^ (seed >>> 15), 1 | seed);
+    t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t;
+    return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+  };
+}
+
+// ============================================================
+// PIXEL HELPERS
+// ============================================================
+const S = 16;
+function clamp(v) { return v < 0 ? 0 : v > 255 ? 255 : Math.round(v); }
+function sp(d, x, y, r, g, b) {
+  if (x < 0 || x >= S || y < 0 || y >= S) return;
+  const i = (y * S + x) * 4;
+  d[i] = r; d[i+1] = g; d[i+2] = b; d[i+3] = 255;
+}
+
+// ============================================================
+// TEXTURE GENERATORS
+// ============================================================
+function flatNoise(rng, r, g, b, n) {
+  const d = new Uint8ClampedArray(S * S * 4);
+  for (let i = 0; i < S * S; i++) {
+    const v = (rng() - 0.5) * 2 * n;
+    d[i*4] = clamp(r+v); d[i*4+1] = clamp(g+v); d[i*4+2] = clamp(b+v); d[i*4+3] = 255;
+  }
+  return d;
+}
+
+function specksNoise(rng, r, g, b, sr, sg, sb, density, n) {
+  const d = new Uint8ClampedArray(S * S * 4);
+  for (let i = 0; i < S * S; i++) {
+    const v = (rng() - 0.5) * 2 * n;
+    if (rng() < density) {
+      d[i*4] = clamp(sr+v); d[i*4+1] = clamp(sg+v); d[i*4+2] = clamp(sb+v);
+    } else {
+      d[i*4] = clamp(r+v); d[i*4+1] = clamp(g+v); d[i*4+2] = clamp(b+v);
+    }
+    d[i*4+3] = 255;
+  }
+  return d;
+}
+
+const COBBLE_SEED_CENTERS = [[3,3],[11,2],[14,5],[5,9],[13,10],[8,6],[2,12],[11,13],[6,14]];
+function cobbleGen(rng, r, g, b) {
+  const d = new Uint8ClampedArray(S * S * 4);
+  const centers = COBBLE_SEED_CENTERS.map(([cx,cy]) => [cx+(rng()-0.5)*2.2, cy+(rng()-0.5)*2.2]);
+  const sv = centers.map(() => (rng()-0.5)*32);
+  const noise = Float32Array.from({length: S*S}, () => (rng()-0.5)*28);
+  for (let y = 0; y < S; y++) for (let x = 0; x < S; x++) {
+    let d1=Infinity, d2=Infinity, mi=0;
+    for (let ci=0; ci<centers.length; ci++) {
+      const [cx,cy]=centers[ci], dist=(x-cx)**2+(y-cy)**2;
+      if (dist<d1){d2=d1;d1=dist;mi=ci;}else if(dist<d2){d2=dist;}
+    }
+    const border = Math.sqrt(d2)-Math.sqrt(d1);
+    const ni = noise[y*S+x];
+    const v = border<1.7 ? clamp(r-52+ni*0.4) : clamp(r+sv[mi]+ni);
+    sp(d,x,y,v,v,v);
+  }
+  return d;
+}
+
+function bricksGen(rng, br, bg, bb, mr, mg, mb, brickW=7, brickH=3, noiseAmt=14) {
+  const d = new Uint8ClampedArray(S * S * 4);
+  const rowH = brickH + 1;
+  for (let y=0; y<S; y++) {
+    const rowIdx = Math.floor(y/rowH);
+    const isHMortar = (y % rowH) === 0;
+    const offset = (rowIdx%2) * Math.ceil(brickW/2);
+    for (let x=0; x<S; x++) {
+      const ax = (x+offset)%S;
+      const isVMortar = (ax%(brickW+1)) === 0;
+      const v = (rng()-0.5)*2*noiseAmt;
+      if (isHMortar||isVMortar) sp(d,x,y,clamp(mr+v*0.5),clamp(mg+v*0.5),clamp(mb+v*0.5));
+      else sp(d,x,y,clamp(br+v),clamp(bg+v),clamp(bb+v));
+    }
+  }
+  return d;
+}
+
+function grainGen(rng, r, g, b, n) {
+  const d = new Uint8ClampedArray(S * S * 4);
+  const rb = Float32Array.from({length:S}, () => (rng()-0.5)*n);
+  for (let y=0; y<S; y++) for (let x=0; x<S; x++) {
+    const v = (rng()-0.5)*n*0.6 + rb[y];
+    sp(d,x,y,clamp(r+v),clamp(g+v),clamp(b+v));
+  }
+  return d;
+}
+
+function sandstoneGen(rng, r, g, b) {
+  const d = new Uint8ClampedArray(S * S * 4);
+  for (let y=0; y<S; y++) {
+    const bs = Math.sin(y*0.9)*14 + (rng()-0.5)*10;
+    for (let x=0; x<S; x++) {
+      const v=(rng()-0.5)*10;
+      sp(d,x,y,clamp(r+bs+v),clamp(g+bs+v),clamp(b+bs+v));
+    }
+  }
+  return d;
+}
+
+function prismarineGen(rng) {
+  const d = new Uint8ClampedArray(S * S * 4);
+  for (let y=0; y<S; y++) for (let x=0; x<S; x++) {
+    const w=Math.sin(x*1.1+y*0.8+rng()*0.5)*18, v=(rng()-0.5)*20;
+    sp(d,x,y,clamp(102+w+v),clamp(162+w*0.7+v*0.6),clamp(147+w*0.8+v*0.7));
+  }
+  return d;
+}
+
+function darkPrismarineGen(rng) {
+  const d = new Uint8ClampedArray(S * S * 4);
+  for (let y=0; y<S; y++) for (let x=0; x<S; x++) {
+    const w=Math.sin(x*0.9+y*1.2+rng()*0.4)*10, v=(rng()-0.5)*14;
+    sp(d,x,y,clamp(52+w+v),clamp(86+w*0.7+v*0.6),clamp(70+w*0.8+v*0.7));
+  }
+  return d;
+}
+
+function smoothStoneGen(rng) {
+  const d = flatNoise(rng, 118, 118, 118, 8);
+  for (let x=0; x<S; x++) {
+    const sh=(v)=>clamp(v*0.55);
+    let i=x*4; d[i]=sh(d[i]);d[i+1]=sh(d[i+1]);d[i+2]=sh(d[i+2]);
+    i=((S-1)*S+x)*4; d[i]=sh(d[i]);d[i+1]=sh(d[i+1]);d[i+2]=sh(d[i+2]);
+  }
+  for (let y=1; y<S-1; y++) {
+    const sh=(v)=>clamp(v*0.55);
+    let i=(y*S)*4; d[i]=sh(d[i]);d[i+1]=sh(d[i+1]);d[i+2]=sh(d[i+2]);
+    i=(y*S+S-1)*4; d[i]=sh(d[i]);d[i+1]=sh(d[i+1]);d[i+2]=sh(d[i+2]);
+  }
+  return d;
+}
+
+function woodPlanks(rng, r, g, b) {
+  const d = new Uint8ClampedArray(S * S * 4);
+  const ps = Array.from({length:4}, () => (rng()-0.5)*14);
+  for (let y=0; y<S; y++) {
+    const isEdge = (y%4)===0, shade=isEdge?0.68:1.0, pv=ps[Math.floor(y/4)%4];
+    for (let x=0; x<S; x++) {
+      const gx=(rng()-0.5)*14;
+      sp(d,x,y,clamp((r+pv+gx)*shade),clamp((g+pv+gx)*shade),clamp((b+pv+gx)*shade));
+    }
+  }
+  return d;
+}
+
+function leavesGen(rng, r, g, b) {
+  const d = new Uint8ClampedArray(S * S * 4);
+  for (let y=0; y<S; y++) for (let x=0; x<S; x++) {
+    const v=(rng()-0.5)*35, dark=rng()<0.13?0.52:1.0;
+    sp(d,x,y,clamp((r+v)*dark),clamp((g+v)*dark),clamp((b+v)*dark));
+  }
+  return d;
+}
+
+function azaleaLeavesGen(rng) {
+  const d = leavesGen(rng, 55, 100, 28);
+  for (let i=0; i<S*S; i++) {
+    if (rng()<0.09) {
+      d[i*4]=clamp(190+(rng()-0.5)*30); d[i*4+1]=clamp(90+(rng()-0.5)*20); d[i*4+2]=clamp(130+(rng()-0.5)*20);
+    }
+  }
+  return d;
+}
+
+function grassBlockGen(rng) {
+  const d = new Uint8ClampedArray(S * S * 4);
+  for (let y=0; y<S; y++) for (let x=0; x<S; x++) {
+    const v=(rng()-0.5)*20;
+    if (y<3) sp(d,x,y,clamp(94+v),clamp(160+v),clamp(52+v));
+    else if (y<5) { const t=(y-3)/2; sp(d,x,y,clamp(94+(40)*t+v),clamp(160+(-64)*t+v),clamp(52+(15)*t+v)); }
+    else sp(d,x,y,clamp(134+v),clamp(96+v),clamp(67+v));
+  }
+  return d;
+}
+
+function oxidizedCopperGen(rng) {
+  const d = new Uint8ClampedArray(S * S * 4);
+  for (let y=0; y<S; y++) for (let x=0; x<S; x++) {
+    const v=(rng()-0.5)*22, patch=Math.sin(x*0.7+y*1.1)*8;
+    sp(d,x,y,clamp(82+v+patch*0.3),clamp(176+v*0.7+patch),clamp(138+v*0.8+patch*0.6));
+  }
+  return d;
+}
+
+function crimsonNyliumGen(rng) {
+  const d = new Uint8ClampedArray(S * S * 4);
+  for (let i=0; i<S*S; i++) {
+    const v=(rng()-0.5)*16;
+    if (rng()<0.08) { d[i*4]=clamp(60+v); d[i*4+1]=clamp(180+v); d[i*4+2]=clamp(148+v); }
+    else { d[i*4]=clamp(92+v); d[i*4+1]=clamp(20+v*0.5); d[i*4+2]=clamp(22+v*0.5); }
+    d[i*4+3]=255;
+  }
+  return d;
+}
+
+function applyMoss(d, rng, intensity) {
+  for (let i=0; i<S*S; i++) {
+    if (rng()<intensity) {
+      const avg=(d[i*4]+d[i*4+1]+d[i*4+2])/3;
+      if (avg>62) {
+        const str=0.45+rng()*0.55;
+        d[i*4]=clamp(d[i*4]*(1-str*0.5)+18*str);
+        d[i*4+1]=clamp(d[i*4+1]*(1-str*0.2)+92*str);
+        d[i*4+2]=clamp(d[i*4+2]*(1-str*0.6)+14*str);
+      }
+    }
+  }
+}
+
+function applyCracks(d, rng) {
+  const n=2+Math.floor(rng()*3);
+  for (let c=0; c<n; c++) {
+    let x=Math.floor(rng()*S), y=Math.floor(rng()*S);
+    for (let s=0; s<3+Math.floor(rng()*7); s++) {
+      if (x>=0&&x<S&&y>=0&&y<S) {
+        const i=(y*S+x)*4; d[i]=d[i]*0.25|0; d[i+1]=d[i+1]*0.25|0; d[i+2]=d[i+2]*0.25|0;
+      }
+      x+=Math.floor((rng()-0.35)*3); y+=Math.floor((rng()-0.25)*3);
+    }
+  }
+}
+
+// ============================================================
+// BLOCK DEFINITIONS
+// ============================================================
+const BLOCKS = [
+  // Stone
+  {id:'stone',              name:'Stone',                  cat:'Stone',  gen:r=>flatNoise(r,120,120,120,16)},
+  {id:'cobblestone',        name:'Cobblestone',            cat:'Stone',  gen:r=>cobbleGen(r,100,100,100)},
+  {id:'mossy_cobblestone',  name:'Mossy Cobblestone',      cat:'Stone',  gen:r=>{const d=cobbleGen(r,100,100,100);applyMoss(d,r,0.38);return d;}},
+  {id:'smooth_stone',       name:'Smooth Stone',           cat:'Stone',  gen:r=>smoothStoneGen(r)},
+  {id:'stone_bricks',       name:'Stone Bricks',           cat:'Stone',  gen:r=>bricksGen(r,122,122,122,76,76,76)},
+  {id:'mossy_stone_bricks', name:'Mossy Stone Bricks',     cat:'Stone',  gen:r=>{const d=bricksGen(r,122,122,122,76,76,76);applyMoss(d,r,0.33);return d;}},
+  {id:'cracked_stone_bricks',name:'Cracked Stone Bricks',  cat:'Stone',  gen:r=>{const d=bricksGen(r,122,122,122,76,76,76);applyCracks(d,r);return d;}},
+  {id:'chiseled_stone_bricks',name:'Chiseled Stone Bricks',cat:'Stone',
+    gen:r=>{
+      const d=bricksGen(r,118,118,118,72,72,72,14,6);
+      for(let y=0;y<S;y++)for(let x=0;x<S;x++){
+        const dist=Math.sqrt((x-7.5)**2+(y-7.5)**2);
+        if(dist<3.5){const i=(y*S+x)*4;d[i]=clamp(d[i]*1.25);d[i+1]=clamp(d[i+1]*1.25);d[i+2]=clamp(d[i+2]*1.25);}
+        else if(dist<4.5){const i=(y*S+x)*4;d[i]=clamp(d[i]*0.45);d[i+1]=clamp(d[i+1]*0.45);d[i+2]=clamp(d[i+2]*0.45);}
+      }
+      return d;
+    }},
+  // Polished Stone
+  {id:'andesite',           name:'Andesite',               cat:'Polished Stone', gen:r=>specksNoise(r,130,130,130,58,58,58,0.09,16)},
+  {id:'polished_andesite',  name:'Polished Andesite',      cat:'Polished Stone', gen:r=>flatNoise(r,135,135,135,7)},
+  {id:'diorite',            name:'Diorite',                cat:'Polished Stone', gen:r=>specksNoise(r,202,202,202,88,88,88,0.13,11)},
+  {id:'polished_diorite',   name:'Polished Diorite',       cat:'Polished Stone', gen:r=>flatNoise(r,198,198,198,6)},
+  {id:'granite',            name:'Granite',                cat:'Polished Stone', gen:r=>specksNoise(r,148,103,86,88,48,38,0.1,18)},
+  {id:'polished_granite',   name:'Polished Granite',       cat:'Polished Stone', gen:r=>flatNoise(r,152,108,88,9)},
+  // Deepslate
+  {id:'deepslate',          name:'Deepslate',              cat:'Deepslate', gen:r=>grainGen(r,70,70,80,13)},
+  {id:'cobbled_deepslate',  name:'Cobbled Deepslate',      cat:'Deepslate', gen:r=>cobbleGen(r,72,72,82)},
+  {id:'polished_deepslate', name:'Polished Deepslate',     cat:'Deepslate', gen:r=>flatNoise(r,82,82,92,7)},
+  {id:'deepslate_bricks',   name:'Deepslate Bricks',       cat:'Deepslate', gen:r=>bricksGen(r,84,84,95,52,52,60)},
+  {id:'mossy_deepslate_bricks',name:'Mossy Deepslate Bricks',cat:'Deepslate',gen:r=>{const d=bricksGen(r,84,84,95,52,52,60);applyMoss(d,r,0.28);return d;}},
+  {id:'deepslate_tiles',    name:'Deepslate Tiles',        cat:'Deepslate', gen:r=>bricksGen(r,72,72,82,44,44,52,7,7,10)},
+  {id:'cracked_deepslate_bricks',name:'Cracked Deepslate Bricks',cat:'Deepslate',gen:r=>{const d=bricksGen(r,84,84,95,52,52,60);applyCracks(d,r);return d;}},
+  // Nether
+  {id:'nether_bricks',      name:'Nether Bricks',          cat:'Nether', gen:r=>bricksGen(r,46,24,24,28,14,14)},
+  {id:'cracked_nether_bricks',name:'Cracked Nether Bricks',cat:'Nether', gen:r=>{const d=bricksGen(r,46,24,24,28,14,14);applyCracks(d,r);return d;}},
+  {id:'red_nether_bricks',  name:'Red Nether Bricks',      cat:'Nether', gen:r=>bricksGen(r,78,22,22,52,14,14)},
+  {id:'blackstone',         name:'Blackstone',             cat:'Nether', gen:r=>specksNoise(r,40,35,46,100,80,22,0.04,8)},
+  {id:'polished_blackstone',name:'Polished Blackstone',    cat:'Nether', gen:r=>flatNoise(r,50,44,58,6)},
+  {id:'polished_blackstone_bricks',name:'Polished Blackstone Bricks',cat:'Nether',gen:r=>bricksGen(r,55,48,62,32,28,38)},
+  {id:'gilded_blackstone',  name:'Gilded Blackstone',      cat:'Nether', gen:r=>specksNoise(r,40,35,46,200,158,28,0.1,8)},
+  {id:'crimson_planks',     name:'Crimson Planks',         cat:'Nether', gen:r=>woodPlanks(r,101,32,50)},
+  {id:'warped_planks',      name:'Warped Planks',          cat:'Nether', gen:r=>woodPlanks(r,43,104,101)},
+  {id:'crimson_nylium',     name:'Crimson Nylium',         cat:'Nether', gen:r=>crimsonNyliumGen(r)},
+  // Wood
+  {id:'oak_planks',         name:'Oak Planks',             cat:'Wood', gen:r=>woodPlanks(r,162,130,78)},
+  {id:'dark_oak_planks',    name:'Dark Oak Planks',        cat:'Wood', gen:r=>woodPlanks(r,66,43,20)},
+  {id:'spruce_planks',      name:'Spruce Planks',          cat:'Wood', gen:r=>woodPlanks(r,114,84,48)},
+  {id:'birch_planks',       name:'Birch Planks',           cat:'Wood', gen:r=>woodPlanks(r,216,194,118)},
+  {id:'jungle_planks',      name:'Jungle Planks',          cat:'Wood', gen:r=>woodPlanks(r,160,115,80)},
+  {id:'acacia_planks',      name:'Acacia Planks',          cat:'Wood', gen:r=>woodPlanks(r,168,90,50)},
+  {id:'mangrove_planks',    name:'Mangrove Planks',        cat:'Wood', gen:r=>woodPlanks(r,100,40,34)},
+  {id:'cherry_planks',      name:'Cherry Planks',          cat:'Wood', gen:r=>woodPlanks(r,228,168,168)},
+  {id:'bamboo_planks',      name:'Bamboo Planks',          cat:'Wood', gen:r=>woodPlanks(r,200,172,98)},
+  // Nature
+  {id:'oak_leaves',         name:'Oak Leaves',             cat:'Nature', gen:r=>leavesGen(r,60,128,34)},
+  {id:'spruce_leaves',      name:'Spruce Leaves',          cat:'Nature', gen:r=>leavesGen(r,38,90,30)},
+  {id:'azalea_leaves',      name:'Azalea Leaves',          cat:'Nature', gen:r=>azaleaLeavesGen(r)},
+  {id:'grass_block',        name:'Grass Block',            cat:'Nature', gen:r=>grassBlockGen(r)},
+  {id:'coarse_dirt',        name:'Coarse Dirt',            cat:'Nature', gen:r=>specksNoise(r,92,62,36,130,112,88,0.13,18)},
+  // Terracotta
+  {id:'terracotta',         name:'Terracotta',             cat:'Terracotta', gen:r=>flatNoise(r,152,94,67,16)},
+  {id:'red_terracotta',     name:'Red Terracotta',         cat:'Terracotta', gen:r=>flatNoise(r,143,61,46,14)},
+  {id:'orange_terracotta',  name:'Orange Terracotta',      cat:'Terracotta', gen:r=>flatNoise(r,162,84,38,15)},
+  {id:'yellow_terracotta',  name:'Yellow Terracotta',      cat:'Terracotta', gen:r=>flatNoise(r,186,133,35,14)},
+  {id:'lime_terracotta',    name:'Lime Terracotta',        cat:'Terracotta', gen:r=>flatNoise(r,103,117,52,13)},
+  {id:'white_terracotta',   name:'White Terracotta',       cat:'Terracotta', gen:r=>flatNoise(r,209,177,161,12)},
+  {id:'pink_terracotta',    name:'Pink Terracotta',        cat:'Terracotta', gen:r=>flatNoise(r,161,100,90,14)},
+  {id:'brown_terracotta',   name:'Brown Terracotta',       cat:'Terracotta', gen:r=>flatNoise(r,77,51,36,12)},
+  {id:'gray_terracotta',    name:'Gray Terracotta',        cat:'Terracotta', gen:r=>flatNoise(r,57,42,35,10)},
+  // Other
+  {id:'brick',              name:'Brick',                  cat:'Other', gen:r=>bricksGen(r,150,76,62,104,72,62)},
+  {id:'quartz_bricks',      name:'Quartz Bricks',          cat:'Other', gen:r=>bricksGen(r,233,228,222,196,192,188)},
+  {id:'sandstone',          name:'Sandstone',              cat:'Other', gen:r=>sandstoneGen(r,217,191,131)},
+  {id:'red_sandstone',      name:'Red Sandstone',          cat:'Other', gen:r=>sandstoneGen(r,183,110,56)},
+  {id:'mud_bricks',         name:'Mud Bricks',             cat:'Other', gen:r=>bricksGen(r,128,100,74,90,68,50)},
+  {id:'prismarine',         name:'Prismarine',             cat:'Other', gen:r=>prismarineGen(r)},
+  {id:'prismarine_bricks',  name:'Prismarine Bricks',      cat:'Other', gen:r=>bricksGen(r,98,164,148,68,126,112)},
+  {id:'dark_prismarine',    name:'Dark Prismarine',        cat:'Other', gen:r=>darkPrismarineGen(r)},
+  {id:'amethyst_block',     name:'Amethyst Block',         cat:'Other', gen:r=>flatNoise(r,126,82,200,20)},
+  {id:'obsidian',           name:'Obsidian',               cat:'Other', gen:r=>specksNoise(r,14,10,20,40,30,55,0.06,5)},
+  {id:'coal_block',         name:'Coal Block',             cat:'Other', gen:r=>flatNoise(r,22,22,22,8)},
+  {id:'copper_block',       name:'Copper Block',           cat:'Other', gen:r=>flatNoise(r,196,120,70,18)},
+  {id:'oxidized_copper',    name:'Oxidized Copper',        cat:'Other', gen:r=>oxidizedCopperGen(r)},
+  {id:'white_concrete',     name:'White Concrete',         cat:'Other', gen:r=>flatNoise(r,207,213,214,5)},
+  {id:'red_concrete',       name:'Red Concrete',           cat:'Other', gen:r=>flatNoise(r,142,33,33,8)},
+];
+
+// ============================================================
+// TEXTURE CACHE
+// ============================================================
+const textureVariants = {};
+function ensureVariants(blockId, count=32) {
+  if (!textureVariants[blockId]) textureVariants[blockId] = [];
+  const variants = textureVariants[blockId];
+  const block = BLOCKS.find(b => b.id === blockId);
+  if (!block) return variants;
+  while (variants.length < count) {
+    const seed = (blockId.split('').reduce((h,c)=>(h*31+c.charCodeAt(0))|0,0)>>>0) + variants.length*7919;
+    const rng = mulberry32(seed);
+    const pixels = block.gen(rng);
+    const oc = new OffscreenCanvas(S,S);
+    oc.getContext('2d').putImageData(new ImageData(pixels,S,S),0,0);
+    variants.push(oc);
+  }
+  return variants;
+}
+
+// ============================================================
+// PALETTE PERCENTAGE MANAGEMENT
+// All values in state.palette are integers summing to 100
+// ============================================================
+
+// Convert any weight map → integer percentages summing to 100
+function normalizeToPercentages(weights) {
+  const entries = Object.entries(weights).filter(([,v]) => v > 0);
+  if (entries.length === 0) return {};
+  const total = entries.reduce((s,[,v])=>s+v, 0);
+  const result = {};
+  let assigned = 0;
+  for (let i = 0; i < entries.length - 1; i++) {
+    const [id, v] = entries[i];
+    result[id] = Math.max(1, Math.round(v / total * 100));
+    assigned += result[id];
+  }
+  result[entries[entries.length-1][0]] = Math.max(1, 100 - assigned);
+  return result;
+}
+
+// Redistribute so changedId has newPct, others share the rest proportionally
+function redistributeFrom(changedId, newPct) {
+  const others = Object.keys(state.palette).filter(k => k !== changedId);
+  if (others.length === 0) { state.palette[changedId] = 100; return; }
+  // Clamp so every other block keeps at least 1%
+  newPct = Math.max(1, Math.min(100 - others.length, newPct));
+  const remaining = 100 - newPct;
+  const othersTotal = others.reduce((s,k) => s + state.palette[k], 0);
+  state.palette[changedId] = newPct;
+  if (othersTotal === 0) {
+    const base = Math.floor(remaining / others.length);
+    const extra = remaining - base * others.length;
+    others.forEach((k,i) => { state.palette[k] = base + (i < extra ? 1 : 0); });
+  } else {
+    let assigned = 0;
+    for (let i = 0; i < others.length - 1; i++) {
+      const k = others[i];
+      state.palette[k] = Math.max(1, Math.round((state.palette[k] / othersTotal) * remaining));
+      assigned += state.palette[k];
+    }
+    state.palette[others[others.length-1]] = Math.max(1, remaining - assigned);
+  }
+  // Guarantee sum = 100
+  const diff = 100 - Object.values(state.palette).reduce((s,v)=>s+v, 0);
+  if (diff !== 0) state.palette[others[others.length-1]] += diff;
+}
+
+// Add block, take equal share from all (including new)
+function addBlockToPalette(id) {
+  state.palette[id] = 0;
+  const keys = Object.keys(state.palette);
+  const n = keys.length;
+  const base = Math.floor(100 / n);
+  const extra = 100 - base * n;
+  keys.forEach((k, i) => { state.palette[k] = base + (i < extra ? 1 : 0); });
+}
+
+// Remove block, distribute its % proportionally to remaining
+function removeBlockFromPalette(id) {
+  const pct = state.palette[id];
+  delete state.palette[id];
+  const remaining = Object.keys(state.palette);
+  if (remaining.length === 0) return;
+  const currentTotal = remaining.reduce((s,k)=>s+state.palette[k],0);
+  if (currentTotal === 0) {
+    const base = Math.floor(100 / remaining.length);
+    const extra = 100 - base * remaining.length;
+    remaining.forEach((k,i) => { state.palette[k] = base + (i < extra ? 1 : 0); });
+  } else {
+    let assigned = 0;
+    for (let i = 0; i < remaining.length - 1; i++) {
+      const k = remaining[i];
+      state.palette[k] = Math.max(1, Math.round((state.palette[k] / currentTotal) * 100));
+      assigned += state.palette[k];
+    }
+    state.palette[remaining[remaining.length-1]] = Math.max(1, 100 - assigned);
+  }
+}
+
+// Sync all slider DOM elements to current state.palette values
+function syncSliders() {
+  const n = Object.keys(state.palette).length;
+  for (const [id, pct] of Object.entries(state.palette)) {
+    const slider = document.querySelector(`input[data-pct-for="${id}"]`);
+    if (slider) { slider.value = pct; slider.max = 100 - Math.max(0, n - 1); }
+    const display = document.querySelector(`span[data-pct-display="${id}"]`);
+    if (display) display.textContent = pct + '%';
+  }
+}
+
+// ============================================================
+// STATE & PRESETS
+// ============================================================
+const BLOCK_SIZES = [16, 24, 32, 48, 64];
+
+const PRESETS = {
+  dungeon:              {cobblestone:4,mossy_cobblestone:3,stone_bricks:4,mossy_stone_bricks:2,cracked_stone_bricks:1},
+  nether_fortress:      {nether_bricks:4,cracked_nether_bricks:2,red_nether_bricks:1,blackstone:1},
+  deepslate_cave:       {cobbled_deepslate:4,deepslate_bricks:3,deepslate:2,deepslate_tiles:2,cracked_deepslate_bricks:1},
+  desert_temple:        {sandstone:5,red_sandstone:3,smooth_stone:1},
+  ocean_monument:       {prismarine:4,prismarine_bricks:3,dark_prismarine:2},
+  polished_mix:         {polished_andesite:3,polished_diorite:3,polished_granite:3,polished_blackstone:1},
+  mossy_ruin:           {mossy_cobblestone:5,mossy_stone_bricks:5,mossy_deepslate_bricks:2,cracked_stone_bricks:2},
+  back_from_the_mines:  {cobblestone:3,mossy_cobblestone:2,red_concrete:2,dark_oak_planks:2},
+  overgrown_path:       {oak_leaves:3,cobblestone:2,mossy_cobblestone:2,coarse_dirt:2},
+  woodcutter:           {dark_oak_planks:4,oak_planks:3,oak_leaves:2},
+  grove_of_ashes:       {grass_block:2,stone:3,oak_planks:2,pink_terracotta:1},
+  ghost_valley:         {red_terracotta:3,dark_oak_planks:3,terracotta:2,grass_block:1},
+  italian_path:         {sandstone:3,spruce_planks:2,smooth_stone:3,cobblestone:2},
+  undergrove:           {amethyst_block:3,oak_leaves:2,crimson_nylium:2,obsidian:1},
+  barrel_roll:          {oak_leaves:2,oak_planks:3,amethyst_block:2,cherry_planks:2},
+  old_garage:           {dark_oak_planks:3,cobblestone:3,deepslate_bricks:2,smooth_stone:2},
+  rusty_roof:           {dark_oak_planks:3,oxidized_copper:3,copper_block:2},
+  warmer_wood:          {brick:3,dark_oak_planks:3,granite:2,pink_terracotta:1},
+  coal_house:           {sandstone:3,coal_block:2,spruce_planks:3,stone_bricks:1},
+  magical_fungi:        {amethyst_block:2,orange_terracotta:2,crimson_nylium:2,obsidian:2},
+  candy_leaves:         {azalea_leaves:3,birch_planks:2,amethyst_block:1,cherry_planks:2},
+  cabin_shower:         {deepslate_bricks:3,dark_oak_planks:3,smooth_stone:2,white_terracotta:1},
+  steampunk_blacksmith: {dark_oak_planks:3,oxidized_copper:3,coal_block:2,copper_block:1},
+  mumbo_mountain:       {brick:3,granite:3,terracotta:2,red_terracotta:1},
+  meadow_in_the_city:   {brick:3,white_concrete:2,oak_leaves:3,cobblestone:1},
+};
+
+let state = {
+  seed:         Math.floor(Math.random() * 0xFFFFFFFF),
+  width:        12,
+  height:       8,
+  blockSizeIdx: 2,
+  palette:      normalizeToPercentages({cobblestone:3,mossy_cobblestone:2,stone_bricks:3,mossy_stone_bricks:2}),
+};
+
+function getBlockSize() { return BLOCK_SIZES[state.blockSizeIdx]; }
+
+function buildWeightedPalette() {
+  // Percentages sum to 100, so weighted array has exactly 100 entries
+  const arr = [];
+  for (const [id, pct] of Object.entries(state.palette))
+    for (let i=0; i<pct; i++) arr.push(id);
+  return arr;
+}
+
+// ============================================================
+// RENDERING
+// ============================================================
+function renderWall() {
+  const canvas = document.getElementById('wall-canvas');
+  const emptyMsg = document.getElementById('empty-msg');
+  const bs = getBlockSize();
+  const palette = buildWeightedPalette();
+
+  if (palette.length === 0) {
+    canvas.style.display = 'none';
+    emptyMsg.style.display = 'block';
+    return;
+  }
+  canvas.style.display = 'block';
+  emptyMsg.style.display = 'none';
+
+  canvas.width  = state.width  * bs;
+  canvas.height = state.height * bs;
+  const ctx = canvas.getContext('2d');
+  ctx.imageSmoothingEnabled = false;
+
+  const rng = mulberry32(state.seed);
+  for (let row=0; row<state.height; row++) {
+    for (let col=0; col<state.width; col++) {
+      const blockId = palette[Math.floor(rng() * palette.length)];
+      const variants = ensureVariants(blockId, 32);
+      ctx.drawImage(variants[Math.floor(rng() * variants.length)], col*bs, row*bs, bs, bs);
+    }
+  }
+
+  document.getElementById('seedInput').value = state.seed.toString(16).toUpperCase().padStart(8,'0');
+  document.getElementById('canvasInfo').textContent =
+    `${state.width} × ${state.height} blocks  •  ${canvas.width} × ${canvas.height}px  •  seed: ${state.seed.toString(16).toUpperCase()}`;
+}
+
+// ============================================================
+// PALETTE UI
+// ============================================================
+const CATEGORIES_ORDER = ['Stone','Polished Stone','Deepslate','Nether','Wood','Nature','Terracotta','Other'];
+
+function buildPaletteUI() {
+  const container = document.getElementById('paletteContainer');
+  container.innerHTML = '';
+  const grouped = {};
+  for (const b of BLOCKS) { if (!grouped[b.cat]) grouped[b.cat]=[]; grouped[b.cat].push(b); }
+
+  for (const catName of CATEGORIES_ORDER) {
+    const blocks = grouped[catName] || [];
+    if (!blocks.length) continue;
+
+    const section = document.createElement('div');
+    section.className = 'category';
+
+    const header = document.createElement('div');
+    header.className = 'category-header';
+    const arrow = document.createElement('span');
+    arrow.className = 'cat-arrow';
+    const countSpan = document.createElement('span');
+    countSpan.className = 'cat-count';
+
+    header.appendChild(arrow);
+    header.appendChild(document.createTextNode(catName));
+    header.appendChild(countSpan);
+
+    const list = document.createElement('div');
+    list.className = 'block-list';
+
+    const collapsed = !['Stone','Deepslate'].includes(catName);
+    list.classList.toggle('collapsed', collapsed);
+    arrow.textContent = collapsed ? '►' : '▼';
+
+    header.addEventListener('click', () => {
+      list.classList.toggle('collapsed');
+      arrow.textContent = list.classList.contains('collapsed') ? '►' : '▼';
+    });
+
+    for (const block of blocks) list.appendChild(createBlockRow(block, blocks, countSpan));
+    updateCatCount(blocks, countSpan);
+
+    section.appendChild(header);
+    section.appendChild(list);
+    container.appendChild(section);
+  }
+}
+
+function updateCatCount(blocks, countSpan) {
+  const sel = blocks.filter(b => b.id in state.palette).length;
+  countSpan.textContent = sel > 0 ? `${sel}/${blocks.length}` : '';
+}
+
+function createBlockRow(block, catBlocks, catCountSpan) {
+  const row = document.createElement('div');
+  row.className = 'block-row' + (block.id in state.palette ? ' selected' : '');
+
+  // --- Top row: preview + checkbox + name + pct ---
+  const top = document.createElement('div');
+  top.className = 'block-row-top';
+
+  const preview = document.createElement('canvas');
+  preview.width = 24; preview.height = 24;
+  preview.className = 'block-preview';
+  requestAnimationFrame(() => {
+    const pc = preview.getContext('2d');
+    pc.imageSmoothingEnabled = false;
+    pc.drawImage(ensureVariants(block.id, 1)[0], 0, 0, 24, 24);
+  });
+
+  const checkbox = document.createElement('input');
+  checkbox.type = 'checkbox';
+  checkbox.checked = block.id in state.palette;
+
+  const nameEl = document.createElement('span');
+  nameEl.className = 'block-name';
+  nameEl.textContent = block.name;
+
+  const pctDisplay = document.createElement('span');
+  pctDisplay.className = 'pct-display';
+  pctDisplay.dataset.pctDisplay = block.id;
+  pctDisplay.textContent = (state.palette[block.id] ?? 0) + '%';
+  pctDisplay.style.visibility = block.id in state.palette ? 'visible' : 'hidden';
+
+  top.appendChild(preview);
+  top.appendChild(checkbox);
+  top.appendChild(nameEl);
+  top.appendChild(pctDisplay);
+
+  // --- Slider row ---
+  const sliderWrap = document.createElement('div');
+  sliderWrap.className = 'block-slider-wrap';
+
+  const slider = document.createElement('input');
+  slider.type = 'range';
+  slider.className = 'pct-slider';
+  slider.min = 1;
+  slider.max = 99;
+  slider.value = state.palette[block.id] ?? 50;
+  slider.dataset.pctFor = block.id;
+
+  sliderWrap.appendChild(slider);
+
+  // --- Events ---
+  slider.addEventListener('input', () => {
+    redistributeFrom(block.id, parseInt(slider.value));
+    syncSliders();
+    renderWall();
+  });
+
+  function toggle(on) {
+    if (on === (block.id in state.palette)) return;
+    if (on) {
+      addBlockToPalette(block.id);
+      row.classList.add('selected');
+      pctDisplay.style.visibility = 'visible';
+    } else {
+      removeBlockFromPalette(block.id);
+      row.classList.remove('selected');
+      pctDisplay.style.visibility = 'hidden';
+    }
+    checkbox.checked = on;
+    syncSliders();
+    updateCatCount(catBlocks, catCountSpan);
+    renderWall();
+  }
+
+  checkbox.addEventListener('change', () => toggle(checkbox.checked));
+  [preview, nameEl].forEach(el => el.addEventListener('click', () => toggle(!(block.id in state.palette))));
+
+  row.appendChild(top);
+  row.appendChild(sliderWrap);
+  return row;
+}
+
+// ============================================================
+// EVENT LISTENERS
+// ============================================================
+function setupEventListeners() {
+  document.getElementById('btnRandomize').addEventListener('click', () => {
+    state.seed = Math.floor(Math.random() * 0xFFFFFFFF);
+    renderWall();
+  });
+  document.getElementById('btnRerender').addEventListener('click', renderWall);
+  document.getElementById('btnExport').addEventListener('click', () => {
+    const a = document.createElement('a');
+    a.download = `mc-wall-${state.seed.toString(16).toUpperCase()}.png`;
+    a.href = document.getElementById('wall-canvas').toDataURL('image/png');
+    a.click();
+  });
+  document.getElementById('widthInput').addEventListener('input', e => {
+    state.width = Math.max(1, Math.min(64, parseInt(e.target.value)||1));
+    renderWall();
+  });
+  document.getElementById('heightInput').addEventListener('input', e => {
+    state.height = Math.max(1, Math.min(32, parseInt(e.target.value)||1));
+    renderWall();
+  });
+  const bsr = document.getElementById('blockSizeRange');
+  bsr.addEventListener('input', () => {
+    state.blockSizeIdx = parseInt(bsr.value);
+    document.getElementById('blockSizeVal').textContent = getBlockSize() + 'px';
+    renderWall();
+  });
+  document.getElementById('seedInput').addEventListener('change', e => {
+    const val = parseInt(e.target.value.trim(), 16);
+    if (!isNaN(val)) { state.seed = val >>> 0; renderWall(); }
+  });
+  document.getElementById('presetSelect').addEventListener('change', e => {
+    const preset = PRESETS[e.target.value];
+    if (!preset) return;
+    state.palette = normalizeToPercentages(preset);
+    buildPaletteUI();
+    renderWall();
+    e.target.value = '';
+  });
+}
+
+// ============================================================
+// INIT
+// ============================================================
+document.addEventListener('DOMContentLoaded', () => {
+  buildPaletteUI();
+  setupEventListeners();
+  renderWall();
+});
+</script>
+</body>
+</html>
