@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Minecraft Wall Randomizer</title>
+  <title>MC Wall Gen</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link href="https://fonts.googleapis.com/css2?family=VT323&display=swap" rel="stylesheet">
   <style>
@@ -28,11 +28,15 @@
     #sidebar::-webkit-scrollbar-thumb { background: #444; border-radius: 3px; }
 
     .sidebar-header {
-      background: #161616; border-bottom: 2px solid #333;
+      background: linear-gradient(180deg, #1a2b0e 0%, #161616 100%);
+      border-bottom: 2px solid #3a5a14;
       padding: 14px 16px 12px; flex-shrink: 0;
     }
-    .sidebar-header h1 { margin: 0; font-size: 22px; color: #7dc33a; letter-spacing: 1px; }
-    .sidebar-header p { margin: 4px 0 0; font-size: 14px; color: #777; }
+    .sidebar-header h1 {
+      margin: 0; font-size: 24px; color: #8ecf3f; letter-spacing: 2px;
+      text-shadow: 0 0 18px rgba(100,200,30,0.35);
+    }
+    .sidebar-header p { margin: 4px 0 0; font-size: 14px; color: #666; }
 
     .sidebar-section { padding: 12px 16px; border-bottom: 1px solid #2a2a2a; }
     .sidebar-section h2 { margin: 0 0 10px; font-size: 16px; color: #aaa; text-transform: uppercase; letter-spacing: 2px; }
@@ -68,15 +72,24 @@
     button {
       font-family: 'VT323', monospace; font-size: 20px;
       border: none; cursor: pointer; padding: 8px 12px;
-      border-radius: 3px; transition: background 0.1s, transform 0.05s; letter-spacing: 1px;
+      border-radius: 4px; transition: background 0.12s, transform 0.05s, filter 0.05s; letter-spacing: 1px;
     }
     button:active { transform: translateY(1px); }
-    .btn-primary { background: #4a7a18; color: #d4ffaa; border-bottom: 3px solid #2e5010; }
-    .btn-primary:hover { background: #5a9020; }
-    .btn-secondary { background: #2a2a2a; color: #aaa; border-bottom: 3px solid #1a1a1a; }
-    .btn-secondary:hover { background: #363636; color: #ccc; }
+    .btn-primary {
+      background: linear-gradient(180deg, #5a8a20 0%, #4a7a18 100%);
+      color: #d4ffaa; border-bottom: 3px solid #2a4e0e;
+    }
+    .btn-primary:hover { background: linear-gradient(180deg, #6a9a28 0%, #5a8a20 100%); }
+    .btn-secondary { background: #282828; color: #999; border-bottom: 3px solid #191919; }
+    .btn-secondary:hover { background: #343434; color: #ccc; }
     .small-btn-row { display: flex; gap: 6px; }
     .small-btn-row button { flex: 1; font-size: 16px; padding: 5px 8px; }
+
+    @keyframes btnConfirm {
+      0%   { filter: brightness(2.2); }
+      100% { filter: brightness(1); }
+    }
+    .btn-confirm { animation: btnConfirm 0.45s ease-out; }
 
     .seed-row { display: flex; gap: 6px; align-items: center; margin-top: 4px; }
     .seed-label { font-size: 14px; color: #777; white-space: nowrap; }
@@ -100,12 +113,32 @@
     .category-header {
       display: flex; align-items: center; gap: 8px;
       padding: 8px 16px; cursor: pointer; user-select: none;
-      background: #1a1a1a; font-size: 15px; color: #999; letter-spacing: 1px;
+      background: #1a1a1a; font-size: 15px; color: #888; letter-spacing: 1px;
+      border-left: 3px solid transparent; transition: border-color 0.15s, color 0.15s;
     }
-    .category-header:hover { background: #222; color: #bbb; }
-    .cat-arrow { font-size: 12px; color: #666; }
-    .cat-count { margin-left: auto; font-size: 13px; color: #555; }
+    .category-header:hover { background: #202020; color: #bbb; border-left-color: #4a7a18; }
+    .cat-arrow { font-size: 11px; color: #555; }
+    .cat-count { margin-left: auto; font-size: 13px; color: #5a8a20; }
     .block-list.collapsed { display: none; }
+    .subcat-header {
+      padding: 5px 16px 3px 18px; font-size: 11px; color: #4a6a22;
+      letter-spacing: 1.5px; text-transform: uppercase;
+      border-top: 1px solid #252525; margin-top: 2px;
+    }
+    .subcat-header:first-child { border-top: none; margin-top: 0; }
+
+    /* === SELECTED SUMMARY === */
+    #selectedSummary {
+      display: none; padding: 8px 14px 10px;
+      border-bottom: 1px solid #2a2a2a; background: #191919;
+    }
+    .summary-title { font-size: 13px; color: #555; letter-spacing: 1px; margin-bottom: 6px; }
+    .summary-chips { display: flex; flex-wrap: wrap; gap: 3px; }
+    .summary-chip {
+      width: 22px; height: 22px; border-radius: 2px;
+      border: 1px solid #333; overflow: hidden; cursor: default;
+    }
+    .summary-chip canvas { display: block; width: 100%; height: 100%; image-rendering: pixelated; }
 
     /* Block row — vertical layout */
     .block-row {
@@ -136,6 +169,18 @@
       min-width: 38px; text-align: right; flex-shrink: 0;
     }
 
+    /* Lock button */
+    .lock-btn {
+      background: none; border: none; border-bottom: none;
+      font-size: 13px; padding: 0 3px; line-height: 1;
+      color: #444; cursor: pointer; flex-shrink: 0;
+      transition: color 0.15s; display: none;
+    }
+    .block-row.selected .lock-btn { display: inline; }
+    .lock-btn:hover { color: #888; }
+    .lock-btn.locked { color: #e0a020; }
+    .lock-btn:active { transform: none; }
+
     /* Percentage slider row */
     .block-slider-wrap {
       display: none;
@@ -165,8 +210,8 @@
     .canvas-info { font-size: 15px; color: #555; }
     #wall-canvas {
       image-rendering: pixelated; image-rendering: crisp-edges;
-      display: block; border: 2px solid #333;
-      box-shadow: 0 4px 20px rgba(0,0,0,0.5);
+      display: block; border: 2px solid #2a2a2a;
+      box-shadow: 0 6px 28px rgba(0,0,0,0.6);
     }
     #empty-msg { display: none; color: #555; font-size: 20px; padding: 40px; }
     .spacer { height: 4px; }
@@ -176,7 +221,7 @@
 
 <aside id="sidebar">
   <div class="sidebar-header">
-    <h1>Wall Randomizer</h1>
+    <h1>MC Wall Gen</h1>
     <p>Minecraft block wall generator</p>
   </div>
 
@@ -194,8 +239,8 @@
     </div>
     <div class="block-size-row">
       <div class="block-size-label-row">
-        <label>Block size</label>
-        <span id="blockSizeVal">32px</span>
+        <label>Zoom</label>
+        <span id="blockSizeVal">3×</span>
       </div>
       <input type="range" id="blockSizeRange" min="0" max="4" value="2" step="1">
     </div>
@@ -205,7 +250,7 @@
     <div class="btn-row">
       <button class="btn-primary" id="btnRandomize">&#x1F3B2; Randomize Wall</button>
       <div class="small-btn-row">
-        <button class="btn-secondary" id="btnRerender">&#x21BA; Same Seed</button>
+        <button class="btn-secondary" id="btnRerender">&#x21BA; Re-render</button>
         <button class="btn-secondary" id="btnExport">&#x1F4BE; Export PNG</button>
       </div>
     </div>
@@ -262,6 +307,10 @@
 
   <div class="sidebar-section" style="padding-bottom:0; border-bottom:none;">
     <h2>Block Palette</h2>
+  </div>
+  <div id="selectedSummary">
+    <div class="summary-title">Selected</div>
+    <div class="summary-chips" id="summaryChips"></div>
   </div>
   <div id="paletteContainer"></div>
   <div style="height:16px; flex-shrink:0;"></div>
@@ -483,6 +532,30 @@ function crimsonNyliumGen(rng) {
   return d;
 }
 
+function logBarkGen(rng, r, g, b) {
+  // Vertical grain for bark side face
+  const d = new Uint8ClampedArray(S * S * 4);
+  const cols = Float32Array.from({length: S}, () => (rng()-0.5)*24);
+  for (let y = 0; y < S; y++) for (let x = 0; x < S; x++) {
+    const v = cols[x] + (rng()-0.5)*8;
+    sp(d, x, y, clamp(r+v), clamp(g+v*0.72), clamp(b+v*0.5));
+  }
+  return d;
+}
+
+function logTopGen(rng, r, g, b) {
+  // Concentric rings for log end-grain
+  const d = new Uint8ClampedArray(S * S * 4);
+  for (let y = 0; y < S; y++) for (let x = 0; x < S; x++) {
+    const dist = Math.sqrt((x-7.5)**2 + (y-7.5)**2);
+    const ring = Math.sin(dist * 1.9) * 0.5 + 0.5;
+    const v = (rng()-0.5)*14;
+    const rv = ring * 22;
+    sp(d, x, y, clamp(r+v+rv*0.9), clamp(g+v*0.8+rv*0.75), clamp(b+v*0.6+rv*0.5));
+  }
+  return d;
+}
+
 function applyMoss(d, rng, intensity) {
   for (let i=0; i<S*S; i++) {
     if (rng()<intensity) {
@@ -514,15 +587,27 @@ function applyCracks(d, rng) {
 // BLOCK DEFINITIONS
 // ============================================================
 const BLOCKS = [
-  // Stone
-  {id:'stone',              name:'Stone',                  cat:'Stone',  gen:r=>flatNoise(r,120,120,120,16)},
-  {id:'cobblestone',        name:'Cobblestone',            cat:'Stone',  gen:r=>cobbleGen(r,100,100,100)},
-  {id:'mossy_cobblestone',  name:'Mossy Cobblestone',      cat:'Stone',  gen:r=>{const d=cobbleGen(r,100,100,100);applyMoss(d,r,0.38);return d;}},
-  {id:'smooth_stone',       name:'Smooth Stone',           cat:'Stone',  gen:r=>smoothStoneGen(r)},
-  {id:'stone_bricks',       name:'Stone Bricks',           cat:'Stone',  gen:r=>bricksGen(r,122,122,122,76,76,76)},
-  {id:'mossy_stone_bricks', name:'Mossy Stone Bricks',     cat:'Stone',  gen:r=>{const d=bricksGen(r,122,122,122,76,76,76);applyMoss(d,r,0.33);return d;}},
-  {id:'cracked_stone_bricks',name:'Cracked Stone Bricks',  cat:'Stone',  gen:r=>{const d=bricksGen(r,122,122,122,76,76,76);applyCracks(d,r);return d;}},
-  {id:'chiseled_stone_bricks',name:'Chiseled Stone Bricks',cat:'Stone',
+  // ---- STONE ----
+  {id:'stone',                  name:'Stone',                  cat:'Stone',    sub:'Natural', gen:r=>flatNoise(r,120,120,120,16)},
+  {id:'cobblestone',            name:'Cobblestone',            cat:'Stone',    sub:'Natural', gen:r=>cobbleGen(r,100,100,100)},
+  {id:'mossy_cobblestone',      name:'Mossy Cobblestone',      cat:'Stone',    sub:'Natural', gen:r=>{const d=cobbleGen(r,100,100,100);applyMoss(d,r,0.38);return d;}},
+  {id:'smooth_stone',           name:'Smooth Stone',           cat:'Stone',    sub:'Natural', gen:r=>smoothStoneGen(r)},
+  {id:'tuff',                   name:'Tuff',                   cat:'Stone',    sub:'Natural', gen:r=>flatNoise(r,105,108,100,16)},
+  {id:'calcite',                name:'Calcite',                cat:'Stone',    sub:'Natural', gen:r=>flatNoise(r,218,218,215,8)},
+  {id:'andesite',               name:'Andesite',               cat:'Stone',    sub:'Polished', gen:r=>specksNoise(r,130,130,130,58,58,58,0.09,16)},
+  {id:'polished_andesite',      name:'Polished Andesite',      cat:'Stone',    sub:'Polished', gen:r=>flatNoise(r,135,135,135,7)},
+  {id:'diorite',                name:'Diorite',                cat:'Stone',    sub:'Polished', gen:r=>specksNoise(r,202,202,202,88,88,88,0.13,11)},
+  {id:'polished_diorite',       name:'Polished Diorite',       cat:'Stone',    sub:'Polished', gen:r=>flatNoise(r,198,198,198,6)},
+  {id:'granite',                name:'Granite',                cat:'Stone',    sub:'Polished', gen:r=>specksNoise(r,148,103,86,88,48,38,0.1,18)},
+  {id:'polished_granite',       name:'Polished Granite',       cat:'Stone',    sub:'Polished', gen:r=>flatNoise(r,152,108,88,9)},
+  {id:'polished_tuff',          name:'Polished Tuff',          cat:'Stone',    sub:'Tuff', gen:r=>flatNoise(r,110,112,106,8)},
+  {id:'tuff_bricks',            name:'Tuff Bricks',            cat:'Stone',    sub:'Tuff', gen:r=>bricksGen(r,108,112,104,72,76,68)},
+  {id:'chiseled_tuff',          name:'Chiseled Tuff',          cat:'Stone',    sub:'Tuff', gen:r=>bricksGen(r,105,108,100,70,74,66,14,6)},
+  {id:'chiseled_tuff_bricks',   name:'Chiseled Tuff Bricks',   cat:'Stone',    sub:'Tuff', gen:r=>bricksGen(r,108,112,104,72,76,68,7,3)},
+  {id:'stone_bricks',           name:'Stone Bricks',           cat:'Stone',    sub:'Brick', gen:r=>bricksGen(r,122,122,122,76,76,76)},
+  {id:'mossy_stone_bricks',     name:'Mossy Stone Bricks',     cat:'Stone',    sub:'Brick', gen:r=>{const d=bricksGen(r,122,122,122,76,76,76);applyMoss(d,r,0.33);return d;}},
+  {id:'cracked_stone_bricks',   name:'Cracked Stone Bricks',   cat:'Stone',    sub:'Brick', gen:r=>{const d=bricksGen(r,122,122,122,76,76,76);applyCracks(d,r);return d;}},
+  {id:'chiseled_stone_bricks',  name:'Chiseled Stone Bricks',  cat:'Stone',    sub:'Brick',
     gen:r=>{
       const d=bricksGen(r,118,118,118,72,72,72,14,6);
       for(let y=0;y<S;y++)for(let x=0;x<S;x++){
@@ -532,116 +617,133 @@ const BLOCKS = [
       }
       return d;
     }},
-  {id:'tuff',               name:'Tuff',                   cat:'Stone',         gen:r=>flatNoise(r,105,108,100,16)},
-  {id:'calcite',            name:'Calcite',                cat:'Stone',         gen:r=>flatNoise(r,218,218,215,8)},
-  // Polished Stone
-  {id:'andesite',           name:'Andesite',               cat:'Polished Stone', gen:r=>specksNoise(r,130,130,130,58,58,58,0.09,16)},
-  {id:'polished_andesite',  name:'Polished Andesite',      cat:'Polished Stone', gen:r=>flatNoise(r,135,135,135,7)},
-  {id:'diorite',            name:'Diorite',                cat:'Polished Stone', gen:r=>specksNoise(r,202,202,202,88,88,88,0.13,11)},
-  {id:'polished_diorite',   name:'Polished Diorite',       cat:'Polished Stone', gen:r=>flatNoise(r,198,198,198,6)},
-  {id:'granite',            name:'Granite',                cat:'Polished Stone', gen:r=>specksNoise(r,148,103,86,88,48,38,0.1,18)},
-  {id:'polished_granite',   name:'Polished Granite',       cat:'Polished Stone', gen:r=>flatNoise(r,152,108,88,9)},
-  {id:'polished_tuff',      name:'Polished Tuff',          cat:'Polished Stone',gen:r=>flatNoise(r,110,112,106,8)},
-  {id:'tuff_bricks',        name:'Tuff Bricks',            cat:'Polished Stone',gen:r=>bricksGen(r,108,112,104,72,76,68)},
-  {id:'chiseled_tuff',      name:'Chiseled Tuff',          cat:'Polished Stone',gen:r=>bricksGen(r,105,108,100,70,74,66,14,6)},
-  {id:'chiseled_tuff_bricks',name:'Chiseled Tuff Bricks',  cat:'Polished Stone',gen:r=>bricksGen(r,108,112,104,72,76,68,7,3)},
-  // Deepslate
-  {id:'deepslate',          name:'Deepslate',              cat:'Deepslate', gen:r=>grainGen(r,70,70,80,13)},
-  {id:'cobbled_deepslate',  name:'Cobbled Deepslate',      cat:'Deepslate', gen:r=>cobbleGen(r,72,72,82)},
-  {id:'polished_deepslate', name:'Polished Deepslate',     cat:'Deepslate', gen:r=>flatNoise(r,82,82,92,7)},
-  {id:'deepslate_bricks',   name:'Deepslate Bricks',       cat:'Deepslate', gen:r=>bricksGen(r,84,84,95,52,52,60)},
-  {id:'mossy_deepslate_bricks',name:'Mossy Deepslate Bricks',cat:'Deepslate',gen:r=>{const d=bricksGen(r,84,84,95,52,52,60);applyMoss(d,r,0.28);return d;}},
-  {id:'deepslate_tiles',    name:'Deepslate Tiles',        cat:'Deepslate', gen:r=>bricksGen(r,72,72,82,44,44,52,7,7,10)},
-  {id:'cracked_deepslate_bricks',name:'Cracked Deepslate Bricks',cat:'Deepslate',gen:r=>{const d=bricksGen(r,84,84,95,52,52,60);applyCracks(d,r);return d;}},
-  // Nether
-  {id:'nether_bricks',      name:'Nether Bricks',          cat:'Nether', gen:r=>bricksGen(r,46,24,24,28,14,14)},
-  {id:'cracked_nether_bricks',name:'Cracked Nether Bricks',cat:'Nether', gen:r=>{const d=bricksGen(r,46,24,24,28,14,14);applyCracks(d,r);return d;}},
-  {id:'red_nether_bricks',  name:'Red Nether Bricks',      cat:'Nether', gen:r=>bricksGen(r,78,22,22,52,14,14)},
-  {id:'blackstone',         name:'Blackstone',             cat:'Nether', gen:r=>specksNoise(r,40,35,46,100,80,22,0.04,8)},
-  {id:'polished_blackstone',name:'Polished Blackstone',    cat:'Nether', gen:r=>flatNoise(r,50,44,58,6)},
-  {id:'polished_blackstone_bricks',name:'Polished Blackstone Bricks',cat:'Nether',gen:r=>bricksGen(r,55,48,62,32,28,38)},
-  {id:'gilded_blackstone',  name:'Gilded Blackstone',      cat:'Nether', gen:r=>specksNoise(r,40,35,46,200,158,28,0.1,8)},
-  {id:'crimson_planks',     name:'Crimson Planks',         cat:'Nether', gen:r=>woodPlanks(r,101,32,50)},
-  {id:'warped_planks',      name:'Warped Planks',          cat:'Nether', gen:r=>woodPlanks(r,43,104,101)},
-  {id:'crimson_nylium',     name:'Crimson Nylium',         cat:'Nether', gen:r=>crimsonNyliumGen(r)},
-  {id:'netherrack',         name:'Netherrack',             cat:'Nether',        gen:r=>flatNoise(r,110,40,40,16)},
-  {id:'soul_sand',          name:'Soul Sand',              cat:'Nether',        gen:r=>specksNoise(r,68,54,42,48,38,30,0.07,14)},
-  {id:'basalt',             name:'Basalt',                 cat:'Nether',        gen:r=>grainGen(r,58,58,65,12)},
-  {id:'polished_basalt',    name:'Polished Basalt',        cat:'Nether',        gen:r=>grainGen(r,70,70,76,8)},
-  {id:'magma_block',        name:'Magma Block',            cat:'Nether',        gen:r=>specksNoise(r,100,42,14,180,90,18,0.1,14)},
-  {id:'nether_wart_block',  name:'Nether Wart Block',      cat:'Nether',        gen:r=>flatNoise(r,118,22,22,16)},
-  {id:'warped_wart_block',  name:'Warped Wart Block',      cat:'Nether',        gen:r=>flatNoise(r,22,118,108,16)},
-  {id:'shroomlight',        name:'Shroomlight',            cat:'Nether',        gen:r=>flatNoise(r,254,218,80,16)},
-  // Wood
-  {id:'oak_planks',         name:'Oak Planks',             cat:'Wood', gen:r=>woodPlanks(r,162,130,78)},
-  {id:'dark_oak_planks',    name:'Dark Oak Planks',        cat:'Wood', gen:r=>woodPlanks(r,66,43,20)},
-  {id:'spruce_planks',      name:'Spruce Planks',          cat:'Wood', gen:r=>woodPlanks(r,114,84,48)},
-  {id:'birch_planks',       name:'Birch Planks',           cat:'Wood', gen:r=>woodPlanks(r,216,194,118)},
-  {id:'jungle_planks',      name:'Jungle Planks',          cat:'Wood', gen:r=>woodPlanks(r,160,115,80)},
-  {id:'acacia_planks',      name:'Acacia Planks',          cat:'Wood', gen:r=>woodPlanks(r,168,90,50)},
-  {id:'mangrove_planks',    name:'Mangrove Planks',        cat:'Wood', gen:r=>woodPlanks(r,100,40,34)},
-  {id:'cherry_planks',      name:'Cherry Planks',          cat:'Wood', gen:r=>woodPlanks(r,228,168,168)},
-  {id:'bamboo_planks',      name:'Bamboo Planks',          cat:'Wood', gen:r=>woodPlanks(r,200,172,98)},
-  {id:'pale_oak_planks',    name:'Pale Oak Planks',        cat:'Wood', gen:r=>woodPlanks(r,228,220,205)},
-  // Nature
-  {id:'oak_leaves',         name:'Oak Leaves',             cat:'Nature', gen:r=>leavesGen(r,60,128,34)},
-  {id:'spruce_leaves',      name:'Spruce Leaves',          cat:'Nature', gen:r=>leavesGen(r,38,90,30)},
-  {id:'azalea_leaves',      name:'Azalea Leaves',          cat:'Nature', gen:r=>azaleaLeavesGen(r)},
-  {id:'grass_block',        name:'Grass Block',            cat:'Nature', gen:r=>grassBlockGen(r)},
-  {id:'coarse_dirt',        name:'Coarse Dirt',            cat:'Nature', gen:r=>specksNoise(r,92,62,36,130,112,88,0.13,18)},
-  {id:'dark_oak_leaves',    name:'Dark Oak Leaves',        cat:'Nature',        gen:r=>leavesGen(r,40,78,24)},
-  {id:'jungle_leaves',      name:'Jungle Leaves',          cat:'Nature',        gen:r=>leavesGen(r,48,104,28)},
-  {id:'birch_leaves',       name:'Birch Leaves',           cat:'Nature',        gen:r=>leavesGen(r,80,120,54)},
-  {id:'mangrove_leaves',    name:'Mangrove Leaves',        cat:'Nature',        gen:r=>leavesGen(r,72,120,42)},
-  {id:'cherry_leaves',      name:'Cherry Leaves',          cat:'Nature',        gen:r=>leavesGen(r,210,105,140)},
-  {id:'moss_block',         name:'Moss Block',             cat:'Nature',        gen:r=>leavesGen(r,78,110,38)},
-  {id:'podzol',             name:'Podzol',                 cat:'Nature',        gen:r=>specksNoise(r,90,62,36,54,42,22,0.2,16)},
-  {id:'mycelium',           name:'Mycelium',               cat:'Nature',        gen:r=>specksNoise(r,110,96,110,78,68,78,0.1,14)},
-  // Terracotta
-  {id:'terracotta',         name:'Terracotta',             cat:'Terracotta', gen:r=>flatNoise(r,152,94,67,16)},
-  {id:'red_terracotta',     name:'Red Terracotta',         cat:'Terracotta', gen:r=>flatNoise(r,143,61,46,14)},
-  {id:'orange_terracotta',  name:'Orange Terracotta',      cat:'Terracotta', gen:r=>flatNoise(r,162,84,38,15)},
-  {id:'yellow_terracotta',  name:'Yellow Terracotta',      cat:'Terracotta', gen:r=>flatNoise(r,186,133,35,14)},
-  {id:'lime_terracotta',    name:'Lime Terracotta',        cat:'Terracotta', gen:r=>flatNoise(r,103,117,52,13)},
-  {id:'white_terracotta',   name:'White Terracotta',       cat:'Terracotta', gen:r=>flatNoise(r,209,177,161,12)},
-  {id:'pink_terracotta',    name:'Pink Terracotta',        cat:'Terracotta', gen:r=>flatNoise(r,161,100,90,14)},
-  {id:'brown_terracotta',   name:'Brown Terracotta',       cat:'Terracotta', gen:r=>flatNoise(r,77,51,36,12)},
-  {id:'gray_terracotta',    name:'Gray Terracotta',        cat:'Terracotta', gen:r=>flatNoise(r,57,42,35,10)},
-  // Other
-  {id:'brick',              name:'Brick',                  cat:'Other', gen:r=>bricksGen(r,150,76,62,104,72,62)},
-  {id:'quartz_bricks',      name:'Quartz Bricks',          cat:'Other', gen:r=>bricksGen(r,233,228,222,196,192,188)},
-  {id:'sandstone',          name:'Sandstone',              cat:'Other', gen:r=>sandstoneGen(r,217,191,131)},
-  {id:'red_sandstone',      name:'Red Sandstone',          cat:'Other', gen:r=>sandstoneGen(r,183,110,56)},
-  {id:'mud_bricks',         name:'Mud Bricks',             cat:'Other', gen:r=>bricksGen(r,128,100,74,90,68,50)},
-  {id:'prismarine',         name:'Prismarine',             cat:'Other', gen:r=>prismarineGen(r)},
-  {id:'prismarine_bricks',  name:'Prismarine Bricks',      cat:'Other', gen:r=>bricksGen(r,98,164,148,68,126,112)},
-  {id:'dark_prismarine',    name:'Dark Prismarine',        cat:'Other', gen:r=>darkPrismarineGen(r)},
-  {id:'amethyst_block',     name:'Amethyst Block',         cat:'Other', gen:r=>flatNoise(r,126,82,200,20)},
-  {id:'obsidian',           name:'Obsidian',               cat:'Other', gen:r=>specksNoise(r,14,10,20,40,30,55,0.06,5)},
-  {id:'coal_block',         name:'Coal Block',             cat:'Other', gen:r=>flatNoise(r,22,22,22,8)},
-  {id:'copper_block',       name:'Copper Block',           cat:'Other', gen:r=>flatNoise(r,196,120,70,18)},
-  {id:'oxidized_copper',    name:'Oxidized Copper',        cat:'Other', gen:r=>oxidizedCopperGen(r)},
-  {id:'white_concrete',     name:'White Concrete',         cat:'Other', gen:r=>flatNoise(r,207,213,214,5)},
-  {id:'red_concrete',       name:'Red Concrete',           cat:'Other', gen:r=>flatNoise(r,142,33,33,8)},
-  {id:'end_stone',          name:'End Stone',              cat:'Other',         gen:r=>specksNoise(r,218,218,168,176,176,132,0.07,14)},
-  {id:'end_stone_bricks',   name:'End Stone Bricks',       cat:'Other',         gen:r=>bricksGen(r,218,218,168,176,176,132)},
-  {id:'purpur_block',       name:'Purpur Block',           cat:'Other',         gen:r=>specksNoise(r,160,90,158,128,68,126,0.08,12)},
-  {id:'crying_obsidian',    name:'Crying Obsidian',        cat:'Other',         gen:r=>specksNoise(r,28,15,52,80,20,180,0.08,5)},
-  {id:'bone_block',         name:'Bone Block',             cat:'Other',         gen:r=>grainGen(r,220,218,196,10)},
-  {id:'packed_ice',         name:'Packed Ice',             cat:'Other',         gen:r=>flatNoise(r,160,196,240,12)},
-  {id:'blue_ice',           name:'Blue Ice',               cat:'Other',         gen:r=>flatNoise(r,100,152,228,10)},
-  {id:'honeycomb_block',    name:'Honeycomb Block',        cat:'Other',         gen:r=>flatNoise(r,218,152,30,16)},
-  {id:'cut_copper',         name:'Cut Copper',             cat:'Other',         gen:r=>bricksGen(r,190,110,65,148,82,48,7,7,12)},
-  {id:'exposed_copper',     name:'Exposed Copper',         cat:'Other',         gen:r=>specksNoise(r,162,116,80,100,130,100,0.15,14)},
-  {id:'weathered_copper',   name:'Weathered Copper',       cat:'Other',         gen:r=>specksNoise(r,100,140,100,82,162,138,0.15,14)},
-  {id:'smooth_quartz',      name:'Smooth Quartz',          cat:'Other',         gen:r=>flatNoise(r,230,228,220,6)},
-  // Minerals
-  {id:'iron_block',         name:'Iron Block',             cat:'Minerals',      gen:r=>flatNoise(r,196,196,196,8)},
-  {id:'gold_block',         name:'Gold Block',             cat:'Minerals',      gen:r=>flatNoise(r,240,196,40,18)},
-  {id:'lapis_block',        name:'Lapis Block',            cat:'Minerals',      gen:r=>flatNoise(r,32,64,168,14)},
-  {id:'emerald_block',      name:'Emerald Block',          cat:'Minerals',      gen:r=>flatNoise(r,44,172,88,16)},
-  {id:'diamond_block',      name:'Diamond Block',          cat:'Minerals',      gen:r=>flatNoise(r,78,214,220,16)},
-  {id:'netherite_block',    name:'Netherite Block',        cat:'Minerals',      gen:r=>flatNoise(r,45,44,46,8)},
+  // ---- DEEPSLATE ----
+  {id:'deepslate',              name:'Deepslate',              cat:'Deepslate', sub:'Natural', gen:r=>grainGen(r,70,70,80,13)},
+  {id:'cobbled_deepslate',      name:'Cobbled Deepslate',      cat:'Deepslate', sub:'Natural', gen:r=>cobbleGen(r,72,72,82)},
+  {id:'polished_deepslate',     name:'Polished Deepslate',     cat:'Deepslate', sub:'Natural', gen:r=>flatNoise(r,82,82,92,7)},
+  {id:'deepslate_bricks',       name:'Deepslate Bricks',       cat:'Deepslate', sub:'Brick', gen:r=>bricksGen(r,84,84,95,52,52,60)},
+  {id:'mossy_deepslate_bricks', name:'Mossy Deepslate Bricks', cat:'Deepslate', sub:'Brick', gen:r=>{const d=bricksGen(r,84,84,95,52,52,60);applyMoss(d,r,0.28);return d;}},
+  {id:'deepslate_tiles',        name:'Deepslate Tiles',        cat:'Deepslate', sub:'Brick', gen:r=>bricksGen(r,72,72,82,44,44,52,7,7,10)},
+  {id:'cracked_deepslate_bricks',name:'Cracked Deepslate Bricks',cat:'Deepslate',sub:'Brick',gen:r=>{const d=bricksGen(r,84,84,95,52,52,60);applyCracks(d,r);return d;}},
+  // ---- NETHER ----
+  {id:'netherrack',             name:'Netherrack',             cat:'Nether',   sub:'Natural', gen:r=>flatNoise(r,110,40,40,16)},
+  {id:'soul_sand',              name:'Soul Sand',              cat:'Nether',   sub:'Natural', gen:r=>specksNoise(r,68,54,42,48,38,30,0.07,14)},
+  {id:'magma_block',            name:'Magma Block',            cat:'Nether',   sub:'Natural', gen:r=>specksNoise(r,100,42,14,180,90,18,0.1,14)},
+  {id:'nether_wart_block',      name:'Nether Wart Block',      cat:'Nether',   sub:'Natural', gen:r=>flatNoise(r,118,22,22,16)},
+  {id:'warped_wart_block',      name:'Warped Wart Block',      cat:'Nether',   sub:'Natural', gen:r=>flatNoise(r,22,118,108,16)},
+  {id:'shroomlight',            name:'Shroomlight',            cat:'Nether',   sub:'Natural', gen:r=>flatNoise(r,254,218,80,16)},
+  {id:'crimson_nylium',         name:'Crimson Nylium',         cat:'Nether',   sub:'Natural', gen:r=>crimsonNyliumGen(r)},
+  {id:'basalt',                 name:'Basalt',                 cat:'Nether',   sub:'Basalt', gen:r=>grainGen(r,58,58,65,12)},
+  {id:'polished_basalt',        name:'Polished Basalt',        cat:'Nether',   sub:'Basalt', gen:r=>grainGen(r,70,70,76,8)},
+  {id:'blackstone',             name:'Blackstone',             cat:'Nether',   sub:'Blackstone', gen:r=>specksNoise(r,40,35,46,100,80,22,0.04,8)},
+  {id:'polished_blackstone',    name:'Polished Blackstone',    cat:'Nether',   sub:'Blackstone', gen:r=>flatNoise(r,50,44,58,6)},
+  {id:'polished_blackstone_bricks',name:'Polished Blackstone Bricks',cat:'Nether',sub:'Blackstone',gen:r=>bricksGen(r,55,48,62,32,28,38)},
+  {id:'gilded_blackstone',      name:'Gilded Blackstone',      cat:'Nether',   sub:'Blackstone', gen:r=>specksNoise(r,40,35,46,200,158,28,0.1,8)},
+  {id:'nether_bricks',          name:'Nether Bricks',          cat:'Nether',   sub:'Brick', gen:r=>bricksGen(r,46,24,24,28,14,14)},
+  {id:'cracked_nether_bricks',  name:'Cracked Nether Bricks',  cat:'Nether',   sub:'Brick', gen:r=>{const d=bricksGen(r,46,24,24,28,14,14);applyCracks(d,r);return d;}},
+  {id:'red_nether_bricks',      name:'Red Nether Bricks',      cat:'Nether',   sub:'Brick', gen:r=>bricksGen(r,78,22,22,52,14,14)},
+  {id:'crimson_planks',         name:'Crimson Planks',         cat:'Nether',   sub:'Fungal', gen:r=>woodPlanks(r,101,32,50)},
+  {id:'warped_planks',          name:'Warped Planks',          cat:'Nether',   sub:'Fungal', gen:r=>woodPlanks(r,43,104,101)},
+  // ---- WOOD ----
+  {id:'oak_planks',             name:'Oak Planks',             cat:'Wood',     sub:'Planks', gen:r=>woodPlanks(r,162,130,78)},
+  {id:'dark_oak_planks',        name:'Dark Oak Planks',        cat:'Wood',     sub:'Planks', gen:r=>woodPlanks(r,66,43,20)},
+  {id:'spruce_planks',          name:'Spruce Planks',          cat:'Wood',     sub:'Planks', gen:r=>woodPlanks(r,114,84,48)},
+  {id:'birch_planks',           name:'Birch Planks',           cat:'Wood',     sub:'Planks', gen:r=>woodPlanks(r,216,194,118)},
+  {id:'jungle_planks',          name:'Jungle Planks',          cat:'Wood',     sub:'Planks', gen:r=>woodPlanks(r,160,115,80)},
+  {id:'acacia_planks',          name:'Acacia Planks',          cat:'Wood',     sub:'Planks', gen:r=>woodPlanks(r,168,90,50)},
+  {id:'mangrove_planks',        name:'Mangrove Planks',        cat:'Wood',     sub:'Planks', gen:r=>woodPlanks(r,100,40,34)},
+  {id:'cherry_planks',          name:'Cherry Planks',          cat:'Wood',     sub:'Planks', gen:r=>woodPlanks(r,228,168,168)},
+  {id:'bamboo_planks',          name:'Bamboo Planks',          cat:'Wood',     sub:'Planks', gen:r=>woodPlanks(r,200,172,98)},
+  {id:'pale_oak_planks',        name:'Pale Oak Planks',        cat:'Wood',     sub:'Planks', gen:r=>woodPlanks(r,228,220,205)},
+  {id:'oak_log',                name:'Oak Log',                cat:'Wood',     sub:'Log Bark', gen:r=>logBarkGen(r,104,80,50)},
+  {id:'dark_oak_log',           name:'Dark Oak Log',           cat:'Wood',     sub:'Log Bark', gen:r=>logBarkGen(r,44,32,16)},
+  {id:'spruce_log',             name:'Spruce Log',             cat:'Wood',     sub:'Log Bark', gen:r=>logBarkGen(r,62,50,30)},
+  {id:'birch_log',              name:'Birch Log',              cat:'Wood',     sub:'Log Bark', gen:r=>logBarkGen(r,202,196,162)},
+  {id:'jungle_log',             name:'Jungle Log',             cat:'Wood',     sub:'Log Bark', gen:r=>logBarkGen(r,82,62,32)},
+  {id:'acacia_log',             name:'Acacia Log',             cat:'Wood',     sub:'Log Bark', gen:r=>logBarkGen(r,90,72,38)},
+  {id:'mangrove_log',           name:'Mangrove Log',           cat:'Wood',     sub:'Log Bark', gen:r=>logBarkGen(r,54,30,22)},
+  {id:'cherry_log',             name:'Cherry Log',             cat:'Wood',     sub:'Log Bark', gen:r=>logBarkGen(r,84,54,50)},
+  {id:'pale_oak_log',           name:'Pale Oak Log',           cat:'Wood',     sub:'Log Bark', gen:r=>logBarkGen(r,176,172,148)},
+  {id:'oak_log_top',            name:'Oak Log Top',            cat:'Wood',     sub:'Log Top', gen:r=>logTopGen(r,104,80,50)},
+  {id:'dark_oak_log_top',       name:'Dark Oak Log Top',       cat:'Wood',     sub:'Log Top', gen:r=>logTopGen(r,44,32,16)},
+  {id:'spruce_log_top',         name:'Spruce Log Top',         cat:'Wood',     sub:'Log Top', gen:r=>logTopGen(r,62,50,30)},
+  {id:'birch_log_top',          name:'Birch Log Top',          cat:'Wood',     sub:'Log Top', gen:r=>logTopGen(r,202,196,162)},
+  {id:'jungle_log_top',         name:'Jungle Log Top',         cat:'Wood',     sub:'Log Top', gen:r=>logTopGen(r,82,62,32)},
+  {id:'acacia_log_top',         name:'Acacia Log Top',         cat:'Wood',     sub:'Log Top', gen:r=>logTopGen(r,90,72,38)},
+  {id:'mangrove_log_top',       name:'Mangrove Log Top',       cat:'Wood',     sub:'Log Top', gen:r=>logTopGen(r,54,30,22)},
+  {id:'cherry_log_top',         name:'Cherry Log Top',         cat:'Wood',     sub:'Log Top', gen:r=>logTopGen(r,84,54,50)},
+  {id:'pale_oak_log_top',       name:'Pale Oak Log Top',       cat:'Wood',     sub:'Log Top', gen:r=>logTopGen(r,176,172,148)},
+  {id:'stripped_oak_log',       name:'Stripped Oak Log',       cat:'Wood',     sub:'Stripped', gen:r=>logBarkGen(r,162,128,80)},
+  {id:'stripped_dark_oak_log',  name:'Stripped Dark Oak Log',  cat:'Wood',     sub:'Stripped', gen:r=>logBarkGen(r,60,38,18)},
+  {id:'stripped_spruce_log',    name:'Stripped Spruce Log',    cat:'Wood',     sub:'Stripped', gen:r=>logBarkGen(r,98,74,42)},
+  {id:'stripped_birch_log',     name:'Stripped Birch Log',     cat:'Wood',     sub:'Stripped', gen:r=>logBarkGen(r,190,172,122)},
+  {id:'stripped_jungle_log',    name:'Stripped Jungle Log',    cat:'Wood',     sub:'Stripped', gen:r=>logBarkGen(r,136,100,62)},
+  {id:'stripped_acacia_log',    name:'Stripped Acacia Log',    cat:'Wood',     sub:'Stripped', gen:r=>logBarkGen(r,166,98,56)},
+  {id:'stripped_mangrove_log',  name:'Stripped Mangrove Log',  cat:'Wood',     sub:'Stripped', gen:r=>logBarkGen(r,102,44,36)},
+  {id:'stripped_cherry_log',    name:'Stripped Cherry Log',    cat:'Wood',     sub:'Stripped', gen:r=>logBarkGen(r,188,136,120)},
+  {id:'stripped_pale_oak_log',  name:'Stripped Pale Oak Log',  cat:'Wood',     sub:'Stripped', gen:r=>logBarkGen(r,224,216,200)},
+  // ---- NATURE ----
+  {id:'oak_leaves',             name:'Oak Leaves',             cat:'Nature',   sub:'Leaves', gen:r=>leavesGen(r,60,128,34)},
+  {id:'dark_oak_leaves',        name:'Dark Oak Leaves',        cat:'Nature',   sub:'Leaves', gen:r=>leavesGen(r,40,78,24)},
+  {id:'spruce_leaves',          name:'Spruce Leaves',          cat:'Nature',   sub:'Leaves', gen:r=>leavesGen(r,38,90,30)},
+  {id:'birch_leaves',           name:'Birch Leaves',           cat:'Nature',   sub:'Leaves', gen:r=>leavesGen(r,80,120,54)},
+  {id:'jungle_leaves',          name:'Jungle Leaves',          cat:'Nature',   sub:'Leaves', gen:r=>leavesGen(r,48,104,28)},
+  {id:'mangrove_leaves',        name:'Mangrove Leaves',        cat:'Nature',   sub:'Leaves', gen:r=>leavesGen(r,72,120,42)},
+  {id:'cherry_leaves',          name:'Cherry Leaves',          cat:'Nature',   sub:'Leaves', gen:r=>leavesGen(r,210,105,140)},
+  {id:'azalea_leaves',          name:'Azalea Leaves',          cat:'Nature',   sub:'Leaves', gen:r=>azaleaLeavesGen(r)},
+  {id:'grass_block',            name:'Grass Block',            cat:'Nature',   sub:'Ground', gen:r=>grassBlockGen(r)},
+  {id:'coarse_dirt',            name:'Coarse Dirt',            cat:'Nature',   sub:'Ground', gen:r=>specksNoise(r,92,62,36,130,112,88,0.13,18)},
+  {id:'podzol',                 name:'Podzol',                 cat:'Nature',   sub:'Ground', gen:r=>specksNoise(r,90,62,36,54,42,22,0.2,16)},
+  {id:'mycelium',               name:'Mycelium',               cat:'Nature',   sub:'Ground', gen:r=>specksNoise(r,110,96,110,78,68,78,0.1,14)},
+  {id:'moss_block',             name:'Moss Block',             cat:'Nature',   sub:'Ground', gen:r=>leavesGen(r,78,110,38)},
+  // ---- TERRACOTTA ----
+  {id:'terracotta',             name:'Terracotta',             cat:'Terracotta', gen:r=>flatNoise(r,152,94,67,16)},
+  {id:'red_terracotta',         name:'Red Terracotta',         cat:'Terracotta', gen:r=>flatNoise(r,143,61,46,14)},
+  {id:'orange_terracotta',      name:'Orange Terracotta',      cat:'Terracotta', gen:r=>flatNoise(r,162,84,38,15)},
+  {id:'yellow_terracotta',      name:'Yellow Terracotta',      cat:'Terracotta', gen:r=>flatNoise(r,186,133,35,14)},
+  {id:'lime_terracotta',        name:'Lime Terracotta',        cat:'Terracotta', gen:r=>flatNoise(r,103,117,52,13)},
+  {id:'white_terracotta',       name:'White Terracotta',       cat:'Terracotta', gen:r=>flatNoise(r,209,177,161,12)},
+  {id:'pink_terracotta',        name:'Pink Terracotta',        cat:'Terracotta', gen:r=>flatNoise(r,161,100,90,14)},
+  {id:'brown_terracotta',       name:'Brown Terracotta',       cat:'Terracotta', gen:r=>flatNoise(r,77,51,36,12)},
+  {id:'gray_terracotta',        name:'Gray Terracotta',        cat:'Terracotta', gen:r=>flatNoise(r,57,42,35,10)},
+  // ---- MASONRY ----
+  {id:'brick',                  name:'Brick',                  cat:'Masonry',  sub:'Brick', gen:r=>bricksGen(r,150,76,62,104,72,62)},
+  {id:'mud_bricks',             name:'Mud Bricks',             cat:'Masonry',  sub:'Brick', gen:r=>bricksGen(r,128,100,74,90,68,50)},
+  {id:'sandstone',              name:'Sandstone',              cat:'Masonry',  sub:'Sandstone', gen:r=>sandstoneGen(r,217,191,131)},
+  {id:'red_sandstone',          name:'Red Sandstone',          cat:'Masonry',  sub:'Sandstone', gen:r=>sandstoneGen(r,183,110,56)},
+  {id:'smooth_quartz',          name:'Smooth Quartz',          cat:'Masonry',  sub:'Quartz', gen:r=>flatNoise(r,230,228,220,6)},
+  {id:'quartz_bricks',          name:'Quartz Bricks',          cat:'Masonry',  sub:'Quartz', gen:r=>bricksGen(r,233,228,222,196,192,188)},
+  {id:'prismarine',             name:'Prismarine',             cat:'Masonry',  sub:'Ocean', gen:r=>prismarineGen(r)},
+  {id:'prismarine_bricks',      name:'Prismarine Bricks',      cat:'Masonry',  sub:'Ocean', gen:r=>bricksGen(r,98,164,148,68,126,112)},
+  {id:'dark_prismarine',        name:'Dark Prismarine',        cat:'Masonry',  sub:'Ocean', gen:r=>darkPrismarineGen(r)},
+  // ---- END ----
+  {id:'end_stone',              name:'End Stone',              cat:'End',      gen:r=>specksNoise(r,218,218,168,176,176,132,0.07,14)},
+  {id:'end_stone_bricks',       name:'End Stone Bricks',       cat:'End',      gen:r=>bricksGen(r,218,218,168,176,176,132)},
+  {id:'purpur_block',           name:'Purpur Block',           cat:'End',      gen:r=>specksNoise(r,160,90,158,128,68,126,0.08,12)},
+  // ---- COPPER ----
+  {id:'copper_block',           name:'Copper Block',           cat:'Copper',   gen:r=>flatNoise(r,196,120,70,18)},
+  {id:'cut_copper',             name:'Cut Copper',             cat:'Copper',   gen:r=>bricksGen(r,190,110,65,148,82,48,7,7,12)},
+  {id:'exposed_copper',         name:'Exposed Copper',         cat:'Copper',   gen:r=>specksNoise(r,162,116,80,100,130,100,0.15,14)},
+  {id:'weathered_copper',       name:'Weathered Copper',       cat:'Copper',   gen:r=>specksNoise(r,100,140,100,82,162,138,0.15,14)},
+  {id:'oxidized_copper',        name:'Oxidized Copper',        cat:'Copper',   gen:r=>oxidizedCopperGen(r)},
+  // ---- SPECIAL ----
+  {id:'packed_ice',             name:'Packed Ice',             cat:'Special',  sub:'Ice', gen:r=>flatNoise(r,160,196,240,12)},
+  {id:'blue_ice',               name:'Blue Ice',               cat:'Special',  sub:'Ice', gen:r=>flatNoise(r,100,152,228,10)},
+  {id:'obsidian',               name:'Obsidian',               cat:'Special',  sub:'Misc', gen:r=>specksNoise(r,14,10,20,40,30,55,0.06,5)},
+  {id:'crying_obsidian',        name:'Crying Obsidian',        cat:'Special',  sub:'Misc', gen:r=>specksNoise(r,28,15,52,80,20,180,0.08,5)},
+  {id:'amethyst_block',         name:'Amethyst Block',         cat:'Special',  sub:'Misc', gen:r=>flatNoise(r,126,82,200,20)},
+  {id:'coal_block',             name:'Coal Block',             cat:'Special',  sub:'Misc', gen:r=>flatNoise(r,22,22,22,8)},
+  {id:'bone_block',             name:'Bone Block',             cat:'Special',  sub:'Misc', gen:r=>grainGen(r,220,218,196,10)},
+  {id:'honeycomb_block',        name:'Honeycomb Block',        cat:'Special',  sub:'Misc', gen:r=>flatNoise(r,218,152,30,16)},
+  {id:'white_concrete',         name:'White Concrete',         cat:'Special',  sub:'Misc', gen:r=>flatNoise(r,207,213,214,5)},
+  {id:'red_concrete',           name:'Red Concrete',           cat:'Special',  sub:'Misc', gen:r=>flatNoise(r,142,33,33,8)},
+  // ---- MINERALS ----
+  {id:'iron_block',             name:'Iron Block',             cat:'Minerals', gen:r=>flatNoise(r,196,196,196,8)},
+  {id:'gold_block',             name:'Gold Block',             cat:'Minerals', gen:r=>flatNoise(r,240,196,40,18)},
+  {id:'lapis_block',            name:'Lapis Block',            cat:'Minerals', gen:r=>flatNoise(r,32,64,168,14)},
+  {id:'emerald_block',          name:'Emerald Block',          cat:'Minerals', gen:r=>flatNoise(r,44,172,88,16)},
+  {id:'diamond_block',          name:'Diamond Block',          cat:'Minerals', gen:r=>flatNoise(r,78,214,220,16)},
+  {id:'netherite_block',        name:'Netherite Block',        cat:'Minerals', gen:r=>flatNoise(r,45,44,46,8)},
 ];
 
 // ============================================================
@@ -718,6 +820,21 @@ const TEXTURE_FILENAMES = {
   magma_block:'magma.png', nether_wart_block:'nether_wart_block.png',
   warped_wart_block:'warped_wart_block.png', shroomlight:'shroomlight.png',
   pale_oak_planks:'pale_oak_planks.png',
+  oak_log:'oak_log.png', dark_oak_log:'dark_oak_log.png',
+  spruce_log:'spruce_log.png', birch_log:'birch_log.png',
+  jungle_log:'jungle_log.png', acacia_log:'acacia_log.png',
+  mangrove_log:'mangrove_log.png', cherry_log:'cherry_log.png',
+  pale_oak_log:'pale_oak_log.png',
+  oak_log_top:'oak_log_top.png', dark_oak_log_top:'dark_oak_log_top.png',
+  spruce_log_top:'spruce_log_top.png', birch_log_top:'birch_log_top.png',
+  jungle_log_top:'jungle_log_top.png', acacia_log_top:'acacia_log_top.png',
+  mangrove_log_top:'mangrove_log_top.png', cherry_log_top:'cherry_log_top.png',
+  pale_oak_log_top:'pale_oak_log_top.png',
+  stripped_oak_log:'stripped_oak_log.png', stripped_dark_oak_log:'stripped_dark_oak_log.png',
+  stripped_spruce_log:'stripped_spruce_log.png', stripped_birch_log:'stripped_birch_log.png',
+  stripped_jungle_log:'stripped_jungle_log.png', stripped_acacia_log:'stripped_acacia_log.png',
+  stripped_mangrove_log:'stripped_mangrove_log.png', stripped_cherry_log:'stripped_cherry_log.png',
+  stripped_pale_oak_log:'stripped_pale_oak_log.png',
   dark_oak_leaves:'dark_oak_leaves.png', jungle_leaves:'jungle_leaves.png',
   birch_leaves:'birch_leaves.png', mangrove_leaves:'mangrove_leaves.png',
   cherry_leaves:'cherry_leaves.png', moss_block:'moss_block.png',
@@ -731,6 +848,19 @@ const TEXTURE_FILENAMES = {
   iron_block:'iron_block.png', gold_block:'gold_block.png',
   lapis_block:'lapis_block.png', emerald_block:'emerald_block.png',
   diamond_block:'diamond_block.png', netherite_block:'netherite_block.png',
+};
+
+// Biome-color tints applied to leaf textures (they're greyscale in the raw assets)
+// Values are [r,g,b] for a canvas 'multiply' composite over the loaded texture
+const TEXTURE_TINTS = {
+  oak_leaves:      [119, 171,  47],
+  dark_oak_leaves: [119, 171,  47],
+  jungle_leaves:   [ 72, 181,  24],
+  birch_leaves:    [128, 167,  85],
+  mangrove_leaves: [105, 172,  55],
+  spruce_leaves:   [ 97, 153,  97],
+  moss_block:      [109, 163,  52],
+  // cherry_leaves and azalea_leaves have their own color — no tint
 };
 
 // Blocks with a directional grain that should NOT be randomly rotated
@@ -749,6 +879,11 @@ const NO_ROTATE = new Set([
   'podzol','mycelium',
   'end_stone_bricks',
   'cut_copper',
+  'oak_log','dark_oak_log','spruce_log','birch_log','jungle_log',
+  'acacia_log','mangrove_log','cherry_log','pale_oak_log',
+  'stripped_oak_log','stripped_dark_oak_log','stripped_spruce_log',
+  'stripped_birch_log','stripped_jungle_log','stripped_acacia_log',
+  'stripped_mangrove_log','stripped_cherry_log','stripped_pale_oak_log',
 ]);
 
 // realTextures[blockId] = array of 8 OffscreenCanvases (4 rots × 2 flips)
@@ -767,10 +902,21 @@ function scheduleRender() {
   }
 }
 
-function makeRotatedVariants(src, allowRotate) {
+function applyTint(ctx, tint) {
+  if (!tint) return;
+  ctx.setTransform(1, 0, 0, 1, 0, 0); // reset any active transform
+  ctx.globalCompositeOperation = 'multiply';
+  ctx.fillStyle = `rgb(${tint[0]},${tint[1]},${tint[2]})`;
+  ctx.fillRect(0, 0, S, S);
+  ctx.globalCompositeOperation = 'source-over';
+}
+
+function makeRotatedVariants(src, allowRotate, tint) {
   if (!allowRotate) {
     const oc = new OffscreenCanvas(S, S);
-    oc.getContext('2d').drawImage(src, 0, 0);
+    const ctx = oc.getContext('2d');
+    ctx.drawImage(src, 0, 0);
+    applyTint(ctx, tint);
     return [oc];
   }
   const variants = [];
@@ -782,6 +928,7 @@ function makeRotatedVariants(src, allowRotate) {
       ctx.rotate(r * Math.PI / 2);
       if (f) ctx.scale(-1, 1);
       ctx.drawImage(src, -S / 2, -S / 2, S, S);
+      applyTint(ctx, tint);
       variants.push(oc);
     }
   }
@@ -795,6 +942,12 @@ function updateBlockPreview(id) {
   ctx.imageSmoothingEnabled = false;
   ctx.clearRect(0, 0, 24, 24);
   ctx.drawImage(realTextures[id][0], 0, 0, 24, 24);
+  // also update summary chip if visible
+  const chip = document.querySelector(`.summary-chip[data-summary-for="${id}"]`);
+  if (chip) {
+    const cc = chip.querySelector('canvas');
+    if (cc) { const cx = cc.getContext('2d'); cx.imageSmoothingEnabled = false; cx.drawImage(realTextures[id][0], 0, 0, 20, 20); }
+  }
 }
 
 function updateTexStatus() {
@@ -814,7 +967,7 @@ function loadRealTextures() {
     const img = new Image();
     img.crossOrigin = 'anonymous';
     img.onload = () => {
-      realTextures[id] = makeRotatedVariants(img, !NO_ROTATE.has(id));
+      realTextures[id] = makeRotatedVariants(img, !NO_ROTATE.has(id), TEXTURE_TINTS[id]);
       texLoadedCount++;
       updateBlockPreview(id);
       updateTexStatus();
@@ -846,31 +999,34 @@ function normalizeToPercentages(weights) {
   return result;
 }
 
-// Redistribute so changedId has newPct, others share the rest proportionally
+// Redistribute so changedId has newPct; locked blocks stay fixed, others share the rest proportionally
 function redistributeFrom(changedId, newPct) {
-  const others = Object.keys(state.palette).filter(k => k !== changedId);
-  if (others.length === 0) { state.palette[changedId] = 100; return; }
-  // Clamp so every other block keeps at least 1%
-  newPct = Math.max(1, Math.min(100 - others.length, newPct));
-  const remaining = 100 - newPct;
-  const othersTotal = others.reduce((s,k) => s + state.palette[k], 0);
+  const locked  = Object.keys(state.palette).filter(k => k !== changedId && state.locks.has(k));
+  const free    = Object.keys(state.palette).filter(k => k !== changedId && !state.locks.has(k));
+  if (free.length === 0 && locked.length === 0) { state.palette[changedId] = 100; return; }
+  const lockedTotal = locked.reduce((s,k) => s + state.palette[k], 0);
+  // Clamp so every free block keeps at least 1% and locked blocks keep their current values
+  newPct = Math.max(1, Math.min(100 - lockedTotal - free.length, newPct));
+  const remaining = 100 - newPct - lockedTotal;
+  const freeTotal = free.reduce((s,k) => s + state.palette[k], 0);
   state.palette[changedId] = newPct;
-  if (othersTotal === 0) {
-    const base = Math.floor(remaining / others.length);
-    const extra = remaining - base * others.length;
-    others.forEach((k,i) => { state.palette[k] = base + (i < extra ? 1 : 0); });
+  if (free.length === 0) return; // only locked others — nothing to redistribute
+  if (freeTotal === 0) {
+    const base = Math.floor(remaining / free.length);
+    const extra = remaining - base * free.length;
+    free.forEach((k,i) => { state.palette[k] = base + (i < extra ? 1 : 0); });
   } else {
     let assigned = 0;
-    for (let i = 0; i < others.length - 1; i++) {
-      const k = others[i];
-      state.palette[k] = Math.max(1, Math.round((state.palette[k] / othersTotal) * remaining));
+    for (let i = 0; i < free.length - 1; i++) {
+      const k = free[i];
+      state.palette[k] = Math.max(1, Math.round((state.palette[k] / freeTotal) * remaining));
       assigned += state.palette[k];
     }
-    state.palette[others[others.length-1]] = Math.max(1, remaining - assigned);
+    state.palette[free[free.length-1]] = Math.max(1, remaining - assigned);
   }
   // Guarantee sum = 100
   const diff = 100 - Object.values(state.palette).reduce((s,v)=>s+v, 0);
-  if (diff !== 0) state.palette[others[others.length-1]] += diff;
+  if (diff !== 0) state.palette[free[free.length-1]] += diff;
 }
 
 // Add block, take equal share from all (including new)
@@ -959,8 +1115,9 @@ let state = {
   seed:         Math.floor(Math.random() * 0xFFFFFFFF),
   width:        12,
   height:       8,
-  blockSizeIdx: 2,
+  blockSizeIdx: 3,
   palette:      normalizeToPercentages({cobblestone:3,mossy_cobblestone:2,stone_bricks:3,mossy_stone_bricks:2}),
+  locks:        new Set(), // block IDs whose percentage is pinned
 };
 
 function getBlockSize() { return BLOCK_SIZES[state.blockSizeIdx]; }
@@ -1014,7 +1171,34 @@ function renderWall() {
 // ============================================================
 // PALETTE UI
 // ============================================================
-const CATEGORIES_ORDER = ['Stone','Polished Stone','Deepslate','Nether','Wood','Nature','Terracotta','Other','Minerals'];
+const CATEGORIES_ORDER = ['Stone','Deepslate','Nether','Wood','Nature','Terracotta','Masonry','End','Copper','Special','Minerals'];
+
+function updateSelectedSummary() {
+  const panel = document.getElementById('selectedSummary');
+  const chips = document.getElementById('summaryChips');
+  const ids = Object.keys(state.palette);
+  if (ids.length === 0) { panel.style.display = 'none'; return; }
+  panel.style.display = 'block';
+  chips.innerHTML = '';
+  for (const id of ids) {
+    const block = BLOCKS.find(b => b.id === id);
+    if (!block) continue;
+    const chip = document.createElement('div');
+    chip.className = 'summary-chip';
+    chip.title = block.name;
+    const cv = document.createElement('canvas');
+    cv.width = 20; cv.height = 20;
+    requestAnimationFrame(() => {
+      const pc = cv.getContext('2d');
+      pc.imageSmoothingEnabled = false;
+      const src = realTextures[id] ? realTextures[id][0] : ensureVariants(id, 1)[0];
+      pc.drawImage(src, 0, 0, 20, 20);
+    });
+    chip.dataset.summaryFor = id;
+    chip.appendChild(cv);
+    chips.appendChild(chip);
+  }
+}
 
 function buildPaletteUI() {
   const container = document.getElementById('paletteContainer');
@@ -1052,13 +1236,35 @@ function buildPaletteUI() {
       arrow.textContent = list.classList.contains('collapsed') ? '►' : '▼';
     });
 
-    for (const block of blocks) list.appendChild(createBlockRow(block, blocks, countSpan));
+    // Group by sub-category, preserving insertion order
+    const hasSubs = blocks.some(b => b.sub);
+    if (hasSubs) {
+      const subGroups = [];
+      const subMap = {};
+      for (const b of blocks) {
+        const sub = b.sub || '';
+        if (!subMap[sub]) { subMap[sub] = []; subGroups.push([sub, subMap[sub]]); }
+        subMap[sub].push(b);
+      }
+      for (const [subName, subBlocks] of subGroups) {
+        if (subName) {
+          const subHeader = document.createElement('div');
+          subHeader.className = 'subcat-header';
+          subHeader.textContent = subName;
+          list.appendChild(subHeader);
+        }
+        for (const block of subBlocks) list.appendChild(createBlockRow(block, blocks, countSpan));
+      }
+    } else {
+      for (const block of blocks) list.appendChild(createBlockRow(block, blocks, countSpan));
+    }
     updateCatCount(blocks, countSpan);
 
     section.appendChild(header);
     section.appendChild(list);
     container.appendChild(section);
   }
+  updateSelectedSummary();
 }
 
 function updateCatCount(blocks, countSpan) {
@@ -1099,10 +1305,28 @@ function createBlockRow(block, catBlocks, catCountSpan) {
   pctDisplay.textContent = (state.palette[block.id] ?? 0) + '%';
   pctDisplay.style.visibility = block.id in state.palette ? 'visible' : 'hidden';
 
+  const lockBtn = document.createElement('button');
+  lockBtn.className = 'lock-btn' + (state.locks.has(block.id) ? ' locked' : '');
+  lockBtn.title = 'Lock percentage';
+  lockBtn.textContent = state.locks.has(block.id) ? '🔒' : '🔓';
+  lockBtn.addEventListener('click', e => {
+    e.stopPropagation();
+    if (state.locks.has(block.id)) {
+      state.locks.delete(block.id);
+      lockBtn.classList.remove('locked');
+      lockBtn.textContent = '🔓';
+    } else {
+      state.locks.add(block.id);
+      lockBtn.classList.add('locked');
+      lockBtn.textContent = '🔒';
+    }
+  });
+
   top.appendChild(preview);
   top.appendChild(checkbox);
   top.appendChild(nameEl);
   top.appendChild(pctDisplay);
+  top.appendChild(lockBtn);
 
   // --- Slider row ---
   const sliderWrap = document.createElement('div');
@@ -1132,6 +1356,9 @@ function createBlockRow(block, catBlocks, catCountSpan) {
       row.classList.add('selected');
       pctDisplay.style.visibility = 'visible';
     } else {
+      state.locks.delete(block.id);
+      lockBtn.classList.remove('locked');
+      lockBtn.textContent = '🔓';
       removeBlockFromPalette(block.id);
       row.classList.remove('selected');
       pctDisplay.style.visibility = 'hidden';
@@ -1139,6 +1366,7 @@ function createBlockRow(block, catBlocks, catCountSpan) {
     checkbox.checked = on;
     syncSliders();
     updateCatCount(catBlocks, catCountSpan);
+    updateSelectedSummary();
     renderWall();
   }
 
@@ -1158,7 +1386,13 @@ function setupEventListeners() {
     state.seed = Math.floor(Math.random() * 0xFFFFFFFF);
     renderWall();
   });
-  document.getElementById('btnRerender').addEventListener('click', renderWall);
+  document.getElementById('btnRerender').addEventListener('click', () => {
+    renderWall();
+    const btn = document.getElementById('btnRerender');
+    btn.classList.remove('btn-confirm');
+    void btn.offsetWidth; // force reflow to restart animation
+    btn.classList.add('btn-confirm');
+  });
   document.getElementById('btnExport').addEventListener('click', () => {
     const a = document.createElement('a');
     a.download = `mc-wall-${state.seed.toString(16).toUpperCase()}.png`;
@@ -1173,10 +1407,12 @@ function setupEventListeners() {
     state.height = Math.max(1, Math.min(32, parseInt(e.target.value)||1));
     renderWall();
   });
+  const ZOOM_LABELS = ['1×', '1.5×', '2×', '3×', '4×'];
   const bsr = document.getElementById('blockSizeRange');
+  bsr.value = state.blockSizeIdx; // sync slider to default
   bsr.addEventListener('input', () => {
     state.blockSizeIdx = parseInt(bsr.value);
-    document.getElementById('blockSizeVal').textContent = getBlockSize() + 'px';
+    document.getElementById('blockSizeVal').textContent = ZOOM_LABELS[state.blockSizeIdx];
     renderWall();
   });
   document.getElementById('seedInput').addEventListener('change', e => {
@@ -1187,7 +1423,8 @@ function setupEventListeners() {
     const preset = PRESETS[e.target.value];
     if (!preset) return;
     state.palette = normalizeToPercentages(preset);
-    buildPaletteUI();
+    state.locks.clear();
+    buildPaletteUI(); // calls updateSelectedSummary internally
     renderWall();
     e.target.value = '';
   });
