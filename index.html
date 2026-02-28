@@ -249,6 +249,14 @@
         <option value="mumbo_mountain">Mumbo Mountain</option>
         <option value="meadow_in_the_city">Meadow in the City</option>
       </optgroup>
+      <optgroup label="Themed">
+        <option value="end_city">End City</option>
+        <option value="ice_palace">Ice Palace</option>
+        <option value="basalt_delta">Basalt Delta</option>
+        <option value="tuff_tower">Tuff Tower</option>
+        <option value="mushroom_house">Mushroom House</option>
+        <option value="golden_palace">Golden Palace</option>
+      </optgroup>
     </select>
   </div>
 
@@ -262,6 +270,7 @@
 <main id="canvas-area">
   <div id="canvas-toolbar">
     <span class="canvas-info" id="canvasInfo"></span>
+    <span class="canvas-info" id="texStatus" style="color:#555;"></span>
   </div>
   <div id="empty-msg">Select at least one block from the palette.</div>
   <canvas id="wall-canvas"></canvas>
@@ -523,6 +532,8 @@ const BLOCKS = [
       }
       return d;
     }},
+  {id:'tuff',               name:'Tuff',                   cat:'Stone',         gen:r=>flatNoise(r,105,108,100,16)},
+  {id:'calcite',            name:'Calcite',                cat:'Stone',         gen:r=>flatNoise(r,218,218,215,8)},
   // Polished Stone
   {id:'andesite',           name:'Andesite',               cat:'Polished Stone', gen:r=>specksNoise(r,130,130,130,58,58,58,0.09,16)},
   {id:'polished_andesite',  name:'Polished Andesite',      cat:'Polished Stone', gen:r=>flatNoise(r,135,135,135,7)},
@@ -530,6 +541,10 @@ const BLOCKS = [
   {id:'polished_diorite',   name:'Polished Diorite',       cat:'Polished Stone', gen:r=>flatNoise(r,198,198,198,6)},
   {id:'granite',            name:'Granite',                cat:'Polished Stone', gen:r=>specksNoise(r,148,103,86,88,48,38,0.1,18)},
   {id:'polished_granite',   name:'Polished Granite',       cat:'Polished Stone', gen:r=>flatNoise(r,152,108,88,9)},
+  {id:'polished_tuff',      name:'Polished Tuff',          cat:'Polished Stone',gen:r=>flatNoise(r,110,112,106,8)},
+  {id:'tuff_bricks',        name:'Tuff Bricks',            cat:'Polished Stone',gen:r=>bricksGen(r,108,112,104,72,76,68)},
+  {id:'chiseled_tuff',      name:'Chiseled Tuff',          cat:'Polished Stone',gen:r=>bricksGen(r,105,108,100,70,74,66,14,6)},
+  {id:'chiseled_tuff_bricks',name:'Chiseled Tuff Bricks',  cat:'Polished Stone',gen:r=>bricksGen(r,108,112,104,72,76,68,7,3)},
   // Deepslate
   {id:'deepslate',          name:'Deepslate',              cat:'Deepslate', gen:r=>grainGen(r,70,70,80,13)},
   {id:'cobbled_deepslate',  name:'Cobbled Deepslate',      cat:'Deepslate', gen:r=>cobbleGen(r,72,72,82)},
@@ -549,6 +564,14 @@ const BLOCKS = [
   {id:'crimson_planks',     name:'Crimson Planks',         cat:'Nether', gen:r=>woodPlanks(r,101,32,50)},
   {id:'warped_planks',      name:'Warped Planks',          cat:'Nether', gen:r=>woodPlanks(r,43,104,101)},
   {id:'crimson_nylium',     name:'Crimson Nylium',         cat:'Nether', gen:r=>crimsonNyliumGen(r)},
+  {id:'netherrack',         name:'Netherrack',             cat:'Nether',        gen:r=>flatNoise(r,110,40,40,16)},
+  {id:'soul_sand',          name:'Soul Sand',              cat:'Nether',        gen:r=>specksNoise(r,68,54,42,48,38,30,0.07,14)},
+  {id:'basalt',             name:'Basalt',                 cat:'Nether',        gen:r=>grainGen(r,58,58,65,12)},
+  {id:'polished_basalt',    name:'Polished Basalt',        cat:'Nether',        gen:r=>grainGen(r,70,70,76,8)},
+  {id:'magma_block',        name:'Magma Block',            cat:'Nether',        gen:r=>specksNoise(r,100,42,14,180,90,18,0.1,14)},
+  {id:'nether_wart_block',  name:'Nether Wart Block',      cat:'Nether',        gen:r=>flatNoise(r,118,22,22,16)},
+  {id:'warped_wart_block',  name:'Warped Wart Block',      cat:'Nether',        gen:r=>flatNoise(r,22,118,108,16)},
+  {id:'shroomlight',        name:'Shroomlight',            cat:'Nether',        gen:r=>flatNoise(r,254,218,80,16)},
   // Wood
   {id:'oak_planks',         name:'Oak Planks',             cat:'Wood', gen:r=>woodPlanks(r,162,130,78)},
   {id:'dark_oak_planks',    name:'Dark Oak Planks',        cat:'Wood', gen:r=>woodPlanks(r,66,43,20)},
@@ -559,12 +582,21 @@ const BLOCKS = [
   {id:'mangrove_planks',    name:'Mangrove Planks',        cat:'Wood', gen:r=>woodPlanks(r,100,40,34)},
   {id:'cherry_planks',      name:'Cherry Planks',          cat:'Wood', gen:r=>woodPlanks(r,228,168,168)},
   {id:'bamboo_planks',      name:'Bamboo Planks',          cat:'Wood', gen:r=>woodPlanks(r,200,172,98)},
+  {id:'pale_oak_planks',    name:'Pale Oak Planks',        cat:'Wood', gen:r=>woodPlanks(r,228,220,205)},
   // Nature
   {id:'oak_leaves',         name:'Oak Leaves',             cat:'Nature', gen:r=>leavesGen(r,60,128,34)},
   {id:'spruce_leaves',      name:'Spruce Leaves',          cat:'Nature', gen:r=>leavesGen(r,38,90,30)},
   {id:'azalea_leaves',      name:'Azalea Leaves',          cat:'Nature', gen:r=>azaleaLeavesGen(r)},
   {id:'grass_block',        name:'Grass Block',            cat:'Nature', gen:r=>grassBlockGen(r)},
   {id:'coarse_dirt',        name:'Coarse Dirt',            cat:'Nature', gen:r=>specksNoise(r,92,62,36,130,112,88,0.13,18)},
+  {id:'dark_oak_leaves',    name:'Dark Oak Leaves',        cat:'Nature',        gen:r=>leavesGen(r,40,78,24)},
+  {id:'jungle_leaves',      name:'Jungle Leaves',          cat:'Nature',        gen:r=>leavesGen(r,48,104,28)},
+  {id:'birch_leaves',       name:'Birch Leaves',           cat:'Nature',        gen:r=>leavesGen(r,80,120,54)},
+  {id:'mangrove_leaves',    name:'Mangrove Leaves',        cat:'Nature',        gen:r=>leavesGen(r,72,120,42)},
+  {id:'cherry_leaves',      name:'Cherry Leaves',          cat:'Nature',        gen:r=>leavesGen(r,210,105,140)},
+  {id:'moss_block',         name:'Moss Block',             cat:'Nature',        gen:r=>leavesGen(r,78,110,38)},
+  {id:'podzol',             name:'Podzol',                 cat:'Nature',        gen:r=>specksNoise(r,90,62,36,54,42,22,0.2,16)},
+  {id:'mycelium',           name:'Mycelium',               cat:'Nature',        gen:r=>specksNoise(r,110,96,110,78,68,78,0.1,14)},
   // Terracotta
   {id:'terracotta',         name:'Terracotta',             cat:'Terracotta', gen:r=>flatNoise(r,152,94,67,16)},
   {id:'red_terracotta',     name:'Red Terracotta',         cat:'Terracotta', gen:r=>flatNoise(r,143,61,46,14)},
@@ -591,6 +623,25 @@ const BLOCKS = [
   {id:'oxidized_copper',    name:'Oxidized Copper',        cat:'Other', gen:r=>oxidizedCopperGen(r)},
   {id:'white_concrete',     name:'White Concrete',         cat:'Other', gen:r=>flatNoise(r,207,213,214,5)},
   {id:'red_concrete',       name:'Red Concrete',           cat:'Other', gen:r=>flatNoise(r,142,33,33,8)},
+  {id:'end_stone',          name:'End Stone',              cat:'Other',         gen:r=>specksNoise(r,218,218,168,176,176,132,0.07,14)},
+  {id:'end_stone_bricks',   name:'End Stone Bricks',       cat:'Other',         gen:r=>bricksGen(r,218,218,168,176,176,132)},
+  {id:'purpur_block',       name:'Purpur Block',           cat:'Other',         gen:r=>specksNoise(r,160,90,158,128,68,126,0.08,12)},
+  {id:'crying_obsidian',    name:'Crying Obsidian',        cat:'Other',         gen:r=>specksNoise(r,28,15,52,80,20,180,0.08,5)},
+  {id:'bone_block',         name:'Bone Block',             cat:'Other',         gen:r=>grainGen(r,220,218,196,10)},
+  {id:'packed_ice',         name:'Packed Ice',             cat:'Other',         gen:r=>flatNoise(r,160,196,240,12)},
+  {id:'blue_ice',           name:'Blue Ice',               cat:'Other',         gen:r=>flatNoise(r,100,152,228,10)},
+  {id:'honeycomb_block',    name:'Honeycomb Block',        cat:'Other',         gen:r=>flatNoise(r,218,152,30,16)},
+  {id:'cut_copper',         name:'Cut Copper',             cat:'Other',         gen:r=>bricksGen(r,190,110,65,148,82,48,7,7,12)},
+  {id:'exposed_copper',     name:'Exposed Copper',         cat:'Other',         gen:r=>specksNoise(r,162,116,80,100,130,100,0.15,14)},
+  {id:'weathered_copper',   name:'Weathered Copper',       cat:'Other',         gen:r=>specksNoise(r,100,140,100,82,162,138,0.15,14)},
+  {id:'smooth_quartz',      name:'Smooth Quartz',          cat:'Other',         gen:r=>flatNoise(r,230,228,220,6)},
+  // Minerals
+  {id:'iron_block',         name:'Iron Block',             cat:'Minerals',      gen:r=>flatNoise(r,196,196,196,8)},
+  {id:'gold_block',         name:'Gold Block',             cat:'Minerals',      gen:r=>flatNoise(r,240,196,40,18)},
+  {id:'lapis_block',        name:'Lapis Block',            cat:'Minerals',      gen:r=>flatNoise(r,32,64,168,14)},
+  {id:'emerald_block',      name:'Emerald Block',          cat:'Minerals',      gen:r=>flatNoise(r,44,172,88,16)},
+  {id:'diamond_block',      name:'Diamond Block',          cat:'Minerals',      gen:r=>flatNoise(r,78,214,220,16)},
+  {id:'netherite_block',    name:'Netherite Block',        cat:'Minerals',      gen:r=>flatNoise(r,45,44,46,8)},
 ];
 
 // ============================================================
@@ -611,6 +662,167 @@ function ensureVariants(blockId, count=32) {
     variants.push(oc);
   }
   return variants;
+}
+
+// ============================================================
+// REAL TEXTURE LOADING (minecraft-assets on GitHub, CORS-safe)
+// ============================================================
+const TEXTURE_BASE = 'https://raw.githubusercontent.com/InventivetalentDev/minecraft-assets/1.21.4/assets/minecraft/textures/block/';
+
+// Maps block id → texture filename in the game's asset pack
+const TEXTURE_FILENAMES = {
+  stone:'stone.png', cobblestone:'cobblestone.png',
+  mossy_cobblestone:'mossy_cobblestone.png', smooth_stone:'smooth_stone.png',
+  stone_bricks:'stone_bricks.png', mossy_stone_bricks:'mossy_stone_bricks.png',
+  cracked_stone_bricks:'cracked_stone_bricks.png', chiseled_stone_bricks:'chiseled_stone_bricks.png',
+  andesite:'andesite.png', polished_andesite:'polished_andesite.png',
+  diorite:'diorite.png', polished_diorite:'polished_diorite.png',
+  granite:'granite.png', polished_granite:'polished_granite.png',
+  deepslate:'deepslate.png', cobbled_deepslate:'cobbled_deepslate.png',
+  polished_deepslate:'polished_deepslate.png', deepslate_bricks:'deepslate_bricks.png',
+  mossy_deepslate_bricks:'mossy_deepslate_bricks.png', deepslate_tiles:'deepslate_tiles.png',
+  cracked_deepslate_bricks:'cracked_deepslate_bricks.png',
+  nether_bricks:'nether_bricks.png', cracked_nether_bricks:'cracked_nether_bricks.png',
+  red_nether_bricks:'red_nether_bricks.png', blackstone:'blackstone.png',
+  polished_blackstone:'polished_blackstone.png',
+  polished_blackstone_bricks:'polished_blackstone_bricks.png',
+  gilded_blackstone:'gilded_blackstone.png',
+  crimson_planks:'crimson_planks.png', warped_planks:'warped_planks.png',
+  crimson_nylium:'crimson_nylium.png',
+  oak_planks:'oak_planks.png', dark_oak_planks:'dark_oak_planks.png',
+  spruce_planks:'spruce_planks.png', birch_planks:'birch_planks.png',
+  jungle_planks:'jungle_planks.png', acacia_planks:'acacia_planks.png',
+  mangrove_planks:'mangrove_planks.png', cherry_planks:'cherry_planks.png',
+  bamboo_planks:'bamboo_planks.png',
+  oak_leaves:'oak_leaves.png', spruce_leaves:'spruce_leaves.png',
+  azalea_leaves:'azalea_leaves.png',
+  grass_block:'grass_block_side.png', coarse_dirt:'coarse_dirt.png',
+  terracotta:'terracotta.png', red_terracotta:'red_terracotta.png',
+  orange_terracotta:'orange_terracotta.png', yellow_terracotta:'yellow_terracotta.png',
+  lime_terracotta:'lime_terracotta.png', white_terracotta:'white_terracotta.png',
+  pink_terracotta:'pink_terracotta.png', brown_terracotta:'brown_terracotta.png',
+  gray_terracotta:'gray_terracotta.png',
+  brick:'bricks.png', quartz_bricks:'quartz_bricks.png',
+  sandstone:'sandstone.png', red_sandstone:'red_sandstone.png',
+  mud_bricks:'mud_bricks.png', prismarine:'prismarine.png',
+  prismarine_bricks:'prismarine_bricks.png', dark_prismarine:'dark_prismarine.png',
+  amethyst_block:'amethyst_block.png', obsidian:'obsidian.png',
+  coal_block:'coal_block.png', copper_block:'copper_block.png',
+  oxidized_copper:'oxidized_copper.png',
+  white_concrete:'white_concrete.png', red_concrete:'red_concrete.png',
+  tuff:'tuff.png', calcite:'calcite.png',
+  polished_tuff:'polished_tuff.png', tuff_bricks:'tuff_bricks.png',
+  chiseled_tuff:'chiseled_tuff.png', chiseled_tuff_bricks:'chiseled_tuff_bricks.png',
+  netherrack:'netherrack.png', soul_sand:'soul_sand.png',
+  basalt:'basalt_side.png', polished_basalt:'polished_basalt_side.png',
+  magma_block:'magma.png', nether_wart_block:'nether_wart_block.png',
+  warped_wart_block:'warped_wart_block.png', shroomlight:'shroomlight.png',
+  pale_oak_planks:'pale_oak_planks.png',
+  dark_oak_leaves:'dark_oak_leaves.png', jungle_leaves:'jungle_leaves.png',
+  birch_leaves:'birch_leaves.png', mangrove_leaves:'mangrove_leaves.png',
+  cherry_leaves:'cherry_leaves.png', moss_block:'moss_block.png',
+  podzol:'podzol_side.png', mycelium:'mycelium_side.png',
+  end_stone:'end_stone.png', end_stone_bricks:'end_stone_bricks.png',
+  purpur_block:'purpur_block.png', crying_obsidian:'crying_obsidian.png',
+  bone_block:'bone_block_side.png', packed_ice:'packed_ice.png',
+  blue_ice:'blue_ice.png', honeycomb_block:'honeycomb_block.png',
+  cut_copper:'cut_copper.png', exposed_copper:'exposed_copper.png',
+  weathered_copper:'weathered_copper.png', smooth_quartz:'smooth_quartz.png',
+  iron_block:'iron_block.png', gold_block:'gold_block.png',
+  lapis_block:'lapis_block.png', emerald_block:'emerald_block.png',
+  diamond_block:'diamond_block.png', netherite_block:'netherite_block.png',
+};
+
+// Blocks with a directional grain that should NOT be randomly rotated
+const NO_ROTATE = new Set([
+  'oak_planks','dark_oak_planks','spruce_planks','birch_planks','jungle_planks',
+  'acacia_planks','mangrove_planks','cherry_planks','bamboo_planks',
+  'crimson_planks','warped_planks',
+  'stone_bricks','mossy_stone_bricks','cracked_stone_bricks','chiseled_stone_bricks',
+  'deepslate_bricks','mossy_deepslate_bricks','deepslate_tiles','cracked_deepslate_bricks',
+  'nether_bricks','cracked_nether_bricks','red_nether_bricks',
+  'polished_blackstone_bricks','brick','quartz_bricks','mud_bricks',
+  'prismarine_bricks','sandstone','red_sandstone','grass_block',
+  'tuff_bricks','chiseled_tuff','chiseled_tuff_bricks',
+  'basalt','polished_basalt',
+  'bone_block',
+  'podzol','mycelium',
+  'end_stone_bricks',
+  'cut_copper',
+]);
+
+// realTextures[blockId] = array of 8 OffscreenCanvases (4 rots × 2 flips)
+// or 1-element array when rotation is suppressed
+const realTextures = {};
+const previewCanvases = {}; // blockId → <canvas> DOM element
+
+let texLoadedCount = 0;
+let texTotalCount = 0;
+let renderScheduled = false;
+
+function scheduleRender() {
+  if (!renderScheduled) {
+    renderScheduled = true;
+    requestAnimationFrame(() => { renderScheduled = false; renderWall(); });
+  }
+}
+
+function makeRotatedVariants(src, allowRotate) {
+  if (!allowRotate) {
+    const oc = new OffscreenCanvas(S, S);
+    oc.getContext('2d').drawImage(src, 0, 0);
+    return [oc];
+  }
+  const variants = [];
+  for (let r = 0; r < 4; r++) {
+    for (let f = 0; f < 2; f++) {
+      const oc = new OffscreenCanvas(S, S);
+      const ctx = oc.getContext('2d');
+      ctx.translate(S / 2, S / 2);
+      ctx.rotate(r * Math.PI / 2);
+      if (f) ctx.scale(-1, 1);
+      ctx.drawImage(src, -S / 2, -S / 2, S, S);
+      variants.push(oc);
+    }
+  }
+  return variants; // 8 entries
+}
+
+function updateBlockPreview(id) {
+  const cvs = previewCanvases[id];
+  if (!cvs || !realTextures[id]) return;
+  const ctx = cvs.getContext('2d');
+  ctx.imageSmoothingEnabled = false;
+  ctx.clearRect(0, 0, 24, 24);
+  ctx.drawImage(realTextures[id][0], 0, 0, 24, 24);
+}
+
+function updateTexStatus() {
+  const el = document.getElementById('texStatus');
+  if (el) el.textContent = texLoadedCount < texTotalCount
+    ? `Loading textures… ${texLoadedCount}/${texTotalCount}`
+    : `${texLoadedCount}/${texTotalCount} textures`;
+}
+
+function loadRealTextures() {
+  const ids = BLOCKS.map(b => b.id).filter(id => TEXTURE_FILENAMES[id]);
+  texTotalCount = ids.length;
+  texLoadedCount = 0;
+  updateTexStatus();
+
+  for (const id of ids) {
+    const img = new Image();
+    img.crossOrigin = 'anonymous';
+    img.onload = () => {
+      realTextures[id] = makeRotatedVariants(img, !NO_ROTATE.has(id));
+      texLoadedCount++;
+      updateBlockPreview(id);
+      updateTexStatus();
+      scheduleRender();
+    };
+    img.onerror = () => { texLoadedCount++; updateTexStatus(); };
+    img.src = TEXTURE_BASE + TEXTURE_FILENAMES[id];
+  }
 }
 
 // ============================================================
@@ -735,6 +947,12 @@ const PRESETS = {
   steampunk_blacksmith: {dark_oak_planks:3,oxidized_copper:3,coal_block:2,copper_block:1},
   mumbo_mountain:       {brick:3,granite:3,terracotta:2,red_terracotta:1},
   meadow_in_the_city:   {brick:3,white_concrete:2,oak_leaves:3,cobblestone:1},
+  end_city:             {purpur_block:4,end_stone_bricks:3,end_stone:2,crying_obsidian:1},
+  ice_palace:           {packed_ice:3,blue_ice:4,white_concrete:2},
+  basalt_delta:         {basalt:4,polished_basalt:3,blackstone:2,nether_bricks:1},
+  tuff_tower:           {tuff_bricks:3,polished_tuff:2,tuff:2,cobblestone:1},
+  mushroom_house:       {nether_wart_block:3,warped_wart_block:3,shroomlight:1,crimson_nylium:2},
+  golden_palace:        {gold_block:3,honeycomb_block:3,iron_block:2,smooth_quartz:1},
 };
 
 let state = {
@@ -781,8 +999,10 @@ function renderWall() {
   for (let row=0; row<state.height; row++) {
     for (let col=0; col<state.width; col++) {
       const blockId = palette[Math.floor(rng() * palette.length)];
-      const variants = ensureVariants(blockId, 32);
-      ctx.drawImage(variants[Math.floor(rng() * variants.length)], col*bs, row*bs, bs, bs);
+      // Always consume 2 rng calls per cell so seed is stable regardless of texture source
+      const variantVal = rng();
+      const variants = realTextures[blockId] ?? ensureVariants(blockId, 32);
+      ctx.drawImage(variants[Math.floor(variantVal * variants.length)], col*bs, row*bs, bs, bs);
     }
   }
 
@@ -794,7 +1014,7 @@ function renderWall() {
 // ============================================================
 // PALETTE UI
 // ============================================================
-const CATEGORIES_ORDER = ['Stone','Polished Stone','Deepslate','Nether','Wood','Nature','Terracotta','Other'];
+const CATEGORIES_ORDER = ['Stone','Polished Stone','Deepslate','Nether','Wood','Nature','Terracotta','Other','Minerals'];
 
 function buildPaletteUI() {
   const container = document.getElementById('paletteContainer');
@@ -857,10 +1077,12 @@ function createBlockRow(block, catBlocks, catCountSpan) {
   const preview = document.createElement('canvas');
   preview.width = 24; preview.height = 24;
   preview.className = 'block-preview';
+  previewCanvases[block.id] = preview;
   requestAnimationFrame(() => {
     const pc = preview.getContext('2d');
     pc.imageSmoothingEnabled = false;
-    pc.drawImage(ensureVariants(block.id, 1)[0], 0, 0, 24, 24);
+    const src = realTextures[block.id] ? realTextures[block.id][0] : ensureVariants(block.id, 1)[0];
+    pc.drawImage(src, 0, 0, 24, 24);
   });
 
   const checkbox = document.createElement('input');
@@ -978,6 +1200,7 @@ document.addEventListener('DOMContentLoaded', () => {
   buildPaletteUI();
   setupEventListeners();
   renderWall();
+  loadRealTextures(); // fetches real textures in background, re-renders as they arrive
 });
 </script>
 </body>
