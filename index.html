@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>MC Wall Gen</title>
+  <title>Blockwork</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link href="https://fonts.googleapis.com/css2?family=VT323&display=swap" rel="stylesheet">
   <style>
@@ -133,12 +133,15 @@
       border-bottom: 1px solid #2a2a2a; background: #191919;
     }
     .summary-title { font-size: 13px; color: #555; letter-spacing: 1px; margin-bottom: 6px; }
-    .summary-chips { display: flex; flex-wrap: wrap; gap: 3px; }
-    .summary-chip {
-      width: 22px; height: 22px; border-radius: 2px;
-      border: 1px solid #333; overflow: hidden; cursor: default;
+    .summary-chips { display: flex; flex-direction: column; gap: 5px; }
+    .summary-row { display: flex; flex-direction: column; gap: 2px; }
+    .summary-row-top { display: flex; align-items: center; gap: 6px; }
+    .summary-preview { display: block; flex-shrink: 0; image-rendering: pixelated; border-radius: 2px; }
+    .summary-row-name {
+      flex: 1; font-size: 14px; color: #bbb;
+      overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
     }
-    .summary-chip canvas { display: block; width: 100%; height: 100%; image-rendering: pixelated; }
+    .summary-slider { width: 100%; }
 
     /* Block row — vertical layout */
     .block-row {
@@ -171,14 +174,16 @@
 
     /* Lock button */
     .lock-btn {
-      background: none; border: none; border-bottom: none;
-      font-size: 13px; padding: 0 3px; line-height: 1;
-      color: #444; cursor: pointer; flex-shrink: 0;
+      background: none; border: none;
+      padding: 0 3px; line-height: 1;
+      color: #3a3a3a; cursor: pointer; flex-shrink: 0;
       transition: color 0.15s; display: none;
+      align-items: center;
     }
-    .block-row.selected .lock-btn { display: inline; }
-    .lock-btn:hover { color: #888; }
-    .lock-btn.locked { color: #e0a020; }
+    .lock-btn svg { display: block; }
+    .block-row.selected .lock-btn, .summary-row .lock-btn { display: flex; }
+    .lock-btn:hover { color: #777; }
+    .lock-btn.locked { color: #c8902a; }
     .lock-btn:active { transform: none; }
 
     /* Percentage slider row */
@@ -215,14 +220,19 @@
     }
     #empty-msg { display: none; color: #555; font-size: 20px; padding: 40px; }
     .spacer { height: 4px; }
+    .toggle-row {
+      display: flex; align-items: center; gap: 8px;
+      margin-top: 8px; font-size: 14px; color: #777; cursor: pointer;
+    }
+    .toggle-row input { cursor: pointer; accent-color: #5a8a20; }
   </style>
 </head>
 <body>
 
 <aside id="sidebar">
   <div class="sidebar-header">
-    <h1>MC Wall Gen</h1>
-    <p>Minecraft block wall generator</p>
+    <h1>Blockwork</h1>
+    <p>Minecraft wall designer by Yacobwood</p>
   </div>
 
   <div class="sidebar-section">
@@ -244,15 +254,16 @@
       </div>
       <input type="range" id="blockSizeRange" min="0" max="4" value="2" step="1">
     </div>
+    <label class="toggle-row">
+      <input type="checkbox" id="coordsToggle" checked>
+      <span>Show row &amp; column numbers</span>
+    </label>
   </div>
 
   <div class="sidebar-section">
     <div class="btn-row">
       <button class="btn-primary" id="btnRandomize">&#x1F3B2; Randomize Wall</button>
-      <div class="small-btn-row">
-        <button class="btn-secondary" id="btnRerender">&#x21BA; Re-render</button>
-        <button class="btn-secondary" id="btnExport">&#x1F4BE; Export PNG</button>
-      </div>
+      <button class="btn-secondary" id="btnExport">&#x1F4BE; Export PNG</button>
     </div>
     <div class="spacer"></div>
     <div class="seed-row">
@@ -942,10 +953,10 @@ function updateBlockPreview(id) {
   ctx.imageSmoothingEnabled = false;
   ctx.clearRect(0, 0, 24, 24);
   ctx.drawImage(realTextures[id][0], 0, 0, 24, 24);
-  // also update summary chip if visible
-  const chip = document.querySelector(`.summary-chip[data-summary-for="${id}"]`);
-  if (chip) {
-    const cc = chip.querySelector('canvas');
+  // also update summary row preview if visible
+  const summaryRow = document.querySelector(`.summary-row[data-summary-for="${id}"]`);
+  if (summaryRow) {
+    const cc = summaryRow.querySelector('canvas');
     if (cc) { const cx = cc.getContext('2d'); cx.imageSmoothingEnabled = false; cx.drawImage(realTextures[id][0], 0, 0, 20, 20); }
   }
 }
@@ -1024,9 +1035,15 @@ function redistributeFrom(changedId, newPct) {
     }
     state.palette[free[free.length-1]] = Math.max(1, remaining - assigned);
   }
-  // Guarantee sum = 100
-  const diff = 100 - Object.values(state.palette).reduce((s,v)=>s+v, 0);
-  if (diff !== 0) state.palette[free[free.length-1]] += diff;
+  // Guarantee sum = 100, spreading any rounding error across free blocks
+  let diff = 100 - Object.values(state.palette).reduce((s,v)=>s+v, 0);
+  if (diff < 0) {
+    for (let i = free.length - 1; i >= 0 && diff < 0; i--) {
+      if (state.palette[free[i]] > 1) { state.palette[free[i]]--; diff++; }
+    }
+  } else if (diff > 0) {
+    state.palette[free[free.length-1]] += diff;
+  }
 }
 
 // Add block, take equal share from all (including new)
@@ -1061,14 +1078,28 @@ function removeBlockFromPalette(id) {
   }
 }
 
+const SVG_LOCKED   = `<svg width="11" height="13" viewBox="0 0 11 13" fill="none"><rect x="1" y="5.5" width="9" height="7" rx="1.5" fill="currentColor"/><path d="M2.5 5.5V3.5a3 3 0 0 1 6 0v2" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>`;
+const SVG_UNLOCKED = `<svg width="11" height="13" viewBox="0 0 11 13" fill="none"><rect x="1" y="5.5" width="9" height="7" rx="1.5" fill="currentColor"/><path d="M8.5 5.5V3.5a3 3 0 0 0-6 0" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>`;
+
+function toggleLock(id) {
+  if (state.locks.has(id)) { state.locks.delete(id); } else { state.locks.add(id); }
+  const locked = state.locks.has(id);
+  document.querySelectorAll(`[data-lock-for="${id}"]`).forEach(btn => {
+    btn.innerHTML = locked ? SVG_LOCKED : SVG_UNLOCKED;
+    btn.classList.toggle('locked', locked);
+  });
+}
+
 // Sync all slider DOM elements to current state.palette values
 function syncSliders() {
   const n = Object.keys(state.palette).length;
   for (const [id, pct] of Object.entries(state.palette)) {
-    const slider = document.querySelector(`input[data-pct-for="${id}"]`);
-    if (slider) { slider.value = pct; slider.max = 100 - Math.max(0, n - 1); }
-    const display = document.querySelector(`span[data-pct-display="${id}"]`);
-    if (display) display.textContent = pct + '%';
+    document.querySelectorAll(`input[data-pct-for="${id}"]`).forEach(slider => {
+      slider.value = pct; slider.max = 100 - Math.max(0, n - 1);
+    });
+    document.querySelectorAll(`span[data-pct-display="${id}"]`).forEach(display => {
+      display.textContent = pct + '%';
+    });
   }
 }
 
@@ -1116,6 +1147,7 @@ let state = {
   width:        12,
   height:       8,
   blockSizeIdx: 3,
+  showCoords:   true,
   palette:      normalizeToPercentages({cobblestone:3,mossy_cobblestone:2,stone_bricks:3,mossy_stone_bricks:2}),
   locks:        new Set(), // block IDs whose percentage is pinned
 };
@@ -1147,10 +1179,39 @@ function renderWall() {
   canvas.style.display = 'block';
   emptyMsg.style.display = 'none';
 
-  canvas.width  = state.width  * bs;
-  canvas.height = state.height * bs;
+  // Gutter sizing (computed before canvas resize)
+  const fontSize = Math.max(9, Math.min(Math.floor(bs * 0.33), 15));
+  const gutterTop  = state.showCoords ? fontSize + 8 : 0;
+  // Approximate monospace char width to avoid needing a context first
+  const gutterLeft = state.showCoords ? Math.ceil(String(state.height).length * fontSize * 0.65) + 10 : 0;
+
+  canvas.width  = state.width  * bs + gutterLeft;
+  canvas.height = state.height * bs + gutterTop;
   const ctx = canvas.getContext('2d');
   ctx.imageSmoothingEnabled = false;
+
+  // Draw gutter background
+  if (state.showCoords) {
+    ctx.fillStyle = '#141414';
+    ctx.fillRect(0, 0, canvas.width, gutterTop);          // top strip
+    ctx.fillRect(0, gutterTop, gutterLeft, canvas.height); // left strip
+
+    ctx.font = `bold ${fontSize}px monospace`;
+    ctx.fillStyle = '#666';
+
+    // Column numbers centred above each column
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    for (let col = 0; col < state.width; col++) {
+      ctx.fillText(String(col + 1), gutterLeft + col * bs + bs / 2, gutterTop / 2);
+    }
+
+    // Row numbers centred beside each row
+    ctx.textAlign = 'center';
+    for (let row = 0; row < state.height; row++) {
+      ctx.fillText(String(row + 1), gutterLeft / 2, gutterTop + row * bs + bs / 2);
+    }
+  }
 
   const rng = mulberry32(state.seed);
   for (let row=0; row<state.height; row++) {
@@ -1159,7 +1220,7 @@ function renderWall() {
       // Always consume 2 rng calls per cell so seed is stable regardless of texture source
       const variantVal = rng();
       const variants = realTextures[blockId] ?? ensureVariants(blockId, 32);
-      ctx.drawImage(variants[Math.floor(variantVal * variants.length)], col*bs, row*bs, bs, bs);
+      ctx.drawImage(variants[Math.floor(variantVal * variants.length)], gutterLeft + col*bs, gutterTop + row*bs, bs, bs);
     }
   }
 
@@ -1175,28 +1236,72 @@ const CATEGORIES_ORDER = ['Stone','Deepslate','Nether','Wood','Nature','Terracot
 
 function updateSelectedSummary() {
   const panel = document.getElementById('selectedSummary');
-  const chips = document.getElementById('summaryChips');
+  const list = document.getElementById('summaryChips');
   const ids = Object.keys(state.palette);
   if (ids.length === 0) { panel.style.display = 'none'; return; }
   panel.style.display = 'block';
-  chips.innerHTML = '';
+  list.innerHTML = '';
+  const n = ids.length;
   for (const id of ids) {
     const block = BLOCKS.find(b => b.id === id);
     if (!block) continue;
-    const chip = document.createElement('div');
-    chip.className = 'summary-chip';
-    chip.title = block.name;
+
+    const row = document.createElement('div');
+    row.className = 'summary-row';
+    row.dataset.summaryFor = id;
+
+    // top: thumbnail + name + pct
+    const top = document.createElement('div');
+    top.className = 'summary-row-top';
+
     const cv = document.createElement('canvas');
     cv.width = 20; cv.height = 20;
+    cv.className = 'summary-preview';
     requestAnimationFrame(() => {
       const pc = cv.getContext('2d');
       pc.imageSmoothingEnabled = false;
       const src = realTextures[id] ? realTextures[id][0] : ensureVariants(id, 1)[0];
       pc.drawImage(src, 0, 0, 20, 20);
     });
-    chip.dataset.summaryFor = id;
-    chip.appendChild(cv);
-    chips.appendChild(chip);
+
+    const nameEl = document.createElement('span');
+    nameEl.className = 'summary-row-name';
+    nameEl.textContent = block.name;
+
+    const pctEl = document.createElement('span');
+    pctEl.className = 'pct-display';
+    pctEl.dataset.pctDisplay = id;
+    pctEl.textContent = state.palette[id] + '%';
+
+    const lockBtn = document.createElement('button');
+    lockBtn.className = 'lock-btn' + (state.locks.has(id) ? ' locked' : '');
+    lockBtn.title = 'Lock percentage';
+    lockBtn.innerHTML = state.locks.has(id) ? SVG_LOCKED : SVG_UNLOCKED;
+    lockBtn.dataset.lockFor = id;
+    lockBtn.addEventListener('click', () => toggleLock(id));
+
+    top.appendChild(cv);
+    top.appendChild(nameEl);
+    top.appendChild(pctEl);
+    top.appendChild(lockBtn);
+
+    // slider
+    const slider = document.createElement('input');
+    slider.type = 'range';
+    slider.className = 'pct-slider summary-slider';
+    slider.min = 1;
+    slider.max = 100 - Math.max(0, n - 1);
+    slider.value = state.palette[id];
+    slider.dataset.pctFor = id;
+    slider.addEventListener('input', () => {
+      redistributeFrom(id, parseInt(slider.value));
+      syncSliders();
+      renderWall();
+    });
+
+    row.appendChild(top);
+    row.appendChild(slider);
+    list.appendChild(row);
   }
 }
 
@@ -1308,19 +1413,9 @@ function createBlockRow(block, catBlocks, catCountSpan) {
   const lockBtn = document.createElement('button');
   lockBtn.className = 'lock-btn' + (state.locks.has(block.id) ? ' locked' : '');
   lockBtn.title = 'Lock percentage';
-  lockBtn.textContent = state.locks.has(block.id) ? '🔒' : '🔓';
-  lockBtn.addEventListener('click', e => {
-    e.stopPropagation();
-    if (state.locks.has(block.id)) {
-      state.locks.delete(block.id);
-      lockBtn.classList.remove('locked');
-      lockBtn.textContent = '🔓';
-    } else {
-      state.locks.add(block.id);
-      lockBtn.classList.add('locked');
-      lockBtn.textContent = '🔒';
-    }
-  });
+  lockBtn.innerHTML = state.locks.has(block.id) ? SVG_LOCKED : SVG_UNLOCKED;
+  lockBtn.dataset.lockFor = block.id;
+  lockBtn.addEventListener('click', e => { e.stopPropagation(); toggleLock(block.id); });
 
   top.appendChild(preview);
   top.appendChild(checkbox);
@@ -1358,7 +1453,7 @@ function createBlockRow(block, catBlocks, catCountSpan) {
     } else {
       state.locks.delete(block.id);
       lockBtn.classList.remove('locked');
-      lockBtn.textContent = '🔓';
+      lockBtn.innerHTML = SVG_UNLOCKED;
       removeBlockFromPalette(block.id);
       row.classList.remove('selected');
       pctDisplay.style.visibility = 'hidden';
@@ -1386,16 +1481,10 @@ function setupEventListeners() {
     state.seed = Math.floor(Math.random() * 0xFFFFFFFF);
     renderWall();
   });
-  document.getElementById('btnRerender').addEventListener('click', () => {
-    renderWall();
-    const btn = document.getElementById('btnRerender');
-    btn.classList.remove('btn-confirm');
-    void btn.offsetWidth; // force reflow to restart animation
-    btn.classList.add('btn-confirm');
-  });
+
   document.getElementById('btnExport').addEventListener('click', () => {
     const a = document.createElement('a');
-    a.download = `mc-wall-${state.seed.toString(16).toUpperCase()}.png`;
+    a.download = `blockwork-${state.seed.toString(16).toUpperCase()}.png`;
     a.href = document.getElementById('wall-canvas').toDataURL('image/png');
     a.click();
   });
@@ -1413,6 +1502,10 @@ function setupEventListeners() {
   bsr.addEventListener('input', () => {
     state.blockSizeIdx = parseInt(bsr.value);
     document.getElementById('blockSizeVal').textContent = ZOOM_LABELS[state.blockSizeIdx];
+    renderWall();
+  });
+  document.getElementById('coordsToggle').addEventListener('change', e => {
+    state.showCoords = e.target.checked;
     renderWall();
   });
   document.getElementById('seedInput').addEventListener('change', e => {
