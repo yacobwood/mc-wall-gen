@@ -1,6 +1,8 @@
-# Minecraft Wall Randomizer
+# Blockwork
 
-A browser-based tool for generating randomized Minecraft block walls. Set your dimensions, pick a block palette with percentage controls, and export the result as a PNG reference image.
+A browser-based Minecraft wall designer. Set your dimensions, pick a block palette with percentage controls, and export the result as a PNG reference image.
+
+**By [Yacobwood](https://github.com/yacobwood)**
 
 ![Minecraft Wall Randomizer](https://via.placeholder.com/800x400?text=Screenshot)
 
