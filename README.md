@@ -4,8 +4,6 @@ A browser-based Minecraft wall designer. Set your dimensions, pick a block palet
 
 **By [Yacobwood](https://github.com/yacobwood)**
 
-![Minecraft Wall Randomizer](https://via.placeholder.com/800x400?text=Screenshot)
-
 ## Installation
 
 No build step or package manager required. It's a single HTML file.
