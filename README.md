@@ -1,12 +1,16 @@
 # Blockwork
 
-A browser-based Minecraft wall designer. Set your dimensions, pick a block palette with percentage controls, and export the result as a PNG reference image.
+A browser-based Minecraft wall designer. Pick a block palette, set your dimensions, and export the result as a PNG reference image for your next build.
 
 **By [Yacobwood](https://github.com/yacobwood)**
 
+![Blockwork screenshot](screenshot.png)
+
+---
+
 ## Installation
 
-No build step or package manager required. It's a single HTML file.
+No build step or package manager required — it's a single HTML file.
 
 **Option 1 — Download**
 
@@ -16,12 +20,12 @@ No build step or package manager required. It's a single HTML file.
 **Option 2 — Clone**
 
 ```bash
-git clone https://github.com/yourusername/minecraft-random-wall.git
-cd minecraft-random-wall
+git clone https://github.com/yacobwood/mc-wall-gen.git
+cd mc-wall-gen
 open index.html
 ```
 
-> **Note:** Requires an internet connection on first load to fetch the VT323 font from Google Fonts. The tool itself works fully offline once the font is cached.
+> Requires an internet connection on first load to fetch the VT323 font and real Minecraft textures. Works offline once cached.
 
 ---
 
@@ -29,84 +33,99 @@ open index.html
 
 ### Dimensions
 
-Set the **Width** (1–64 blocks) and **Height** (1–32 blocks) of your wall. The canvas updates live as you type.
+Set **Width** (1–64) and **Height** (1–32) in blocks. Use the **Zoom** slider to scale the preview between 1× and 4× (16–64px per block).
 
-Use the **Block size** slider to zoom in or out — options are 16, 24, 32, 48, and 64px per block.
+Toggle **Show row & column numbers** to overlay a coordinate grid on the image — included in exports.
 
 ### Block Palette
 
-Browse blocks by category in the left sidebar. Click a block's name or preview image to toggle it in your palette. When selected, a **percentage slider** appears beneath it.
+Browse 137+ blocks organised into 11 categories with sub-categories. Click a block's thumbnail or name to add it to your palette.
 
-Sliders are constrained so the total always equals **100%**. Dragging one slider redistributes the remainder proportionally across the other active blocks.
+#### Selected panel
 
-### Randomize
+The **Selected** section at the top of the palette shows all active blocks. Each row has:
+
+- A percentage slider — drag to adjust how often that block appears
+- A **lock button** (🔒) — pins the percentage so it isn't affected when other sliders are moved
+
+Sliders are constrained so the total always equals **100%**. Moving one slider redistributes the remainder proportionally across unlocked blocks.
+
+The same sliders and lock buttons appear in the full block list below, and both stay in sync.
+
+### Seed
 
 - **Randomize Wall** — generates a new wall with a fresh random seed
-- **Same Seed** — re-renders the current wall (useful after changing the palette)
-- **Seed input** — type any 8-character hex value to reproduce a specific wall and share it with others
+- **Seed input** — enter any 8-character hex value to reproduce or share a specific wall
 
 ### Presets
 
-The **Presets** dropdown loads curated block combinations. Includes 7 classic Minecraft build styles and 18 community palettes:
+Load curated palettes from the **Presets** dropdown:
 
-| Classic | Community |
-|---|---|
-| Dungeon / Ruins | Back from the Mines |
-| Nether Fortress | Overgrown Path |
-| Deep Cave | Woodcutter |
-| Desert Temple | Grove of Ashes |
-| Ocean Monument | Ghost Valley |
-| Polished Mix | Italian Path |
-| Mossy Ruin | Undergrove |
-| | Barrel Roll |
-| | Old Garage |
-| | Rusty Roof |
-| | Warmer Wood |
-| | Coal House |
-| | Magical Fungi |
-| | Candy Leaves |
-| | Cabin Shower |
-| | Steampunk Blacksmith |
-| | Mumbo Mountain |
-| | Meadow in the City |
+| Classic | Community | Themed |
+|---|---|---|
+| Dungeon / Ruins | Back from the Mines | End City |
+| Nether Fortress | Overgrown Path | Ice Palace |
+| Deep Cave | Woodcutter | Basalt Delta |
+| Desert Temple | Grove of Ashes | Tuff Tower |
+| Ocean Monument | Ghost Valley | Mushroom House |
+| Polished Mix | Italian Path | Golden Palace |
+| Mossy Ruin | Undergrove | |
+| | Barrel Roll | |
+| | Old Garage | |
+| | Rusty Roof | |
+| | Warmer Wood | |
+| | Coal House | |
+| | Magical Fungi | |
+| | Candy Leaves | |
+| | Cabin Shower | |
+| | Steampunk Blacksmith | |
+| | Mumbo Mountain | |
+| | Meadow in the City | |
 
 ### Export
 
-Click **Export PNG** to download the wall as a lossless PNG, named with the current seed (e.g. `mc-wall-A3F2C891.png`).
+Click **Export PNG** to download a lossless PNG named with the current seed (e.g. `blockwork-A3F2C891.png`). Row/column numbers are baked in if the overlay is enabled.
 
 ---
 
 ## Block Categories
 
-| Category | Blocks |
+Blocks are organised into 11 categories, each with sub-categories:
+
+| Category | Sub-categories |
 |---|---|
-| **Stone** | Stone, Cobblestone, Mossy Cobblestone, Smooth Stone, Stone Bricks, Mossy Stone Bricks, Cracked Stone Bricks, Chiseled Stone Bricks |
-| **Polished Stone** | Andesite, Polished Andesite, Diorite, Polished Diorite, Granite, Polished Granite |
-| **Deepslate** | Deepslate, Cobbled Deepslate, Polished Deepslate, Deepslate Bricks, Mossy Deepslate Bricks, Deepslate Tiles, Cracked Deepslate Bricks |
-| **Nether** | Nether Bricks, Cracked Nether Bricks, Red Nether Bricks, Blackstone, Polished Blackstone, Polished Blackstone Bricks, Gilded Blackstone, Crimson Planks, Warped Planks, Crimson Nylium |
-| **Wood** | Oak, Dark Oak, Spruce, Birch, Jungle, Acacia, Mangrove, Cherry, Bamboo Planks |
-| **Nature** | Oak Leaves, Spruce Leaves, Azalea Leaves, Grass Block, Coarse Dirt |
-| **Terracotta** | Terracotta, Red, Orange, Yellow, Lime, White, Pink, Brown, Gray Terracotta |
-| **Other** | Brick, Quartz Bricks, Sandstone, Red Sandstone, Mud Bricks, Prismarine, Prismarine Bricks, Dark Prismarine, Amethyst Block, Obsidian, Coal Block, Copper Block, Oxidized Copper, White Concrete, Red Concrete |
+| **Stone** | Natural · Polished · Tuff · Brick |
+| **Deepslate** | Natural · Brick |
+| **Nether** | Natural · Basalt · Blackstone · Brick · Fungal |
+| **Wood** | Planks · Log Bark · Log Top · Stripped Log |
+| **Nature** | Leaves · Ground |
+| **Terracotta** | 9 colour variants |
+| **Masonry** | Brick · Sandstone · Quartz · Ocean |
+| **End** | End Stone · End Stone Bricks · Purpur Block |
+| **Copper** | All 5 oxidation stages |
+| **Special** | Ice · Misc |
+| **Minerals** | Iron · Gold · Lapis · Emerald · Diamond · Netherite |
 
 ---
 
 ## How It Works
 
-All block textures are procedurally generated in the browser using the Canvas 2D API — no image assets are loaded. Each block type uses one of several texture algorithms:
+Real Minecraft block textures are fetched from [InventivetalentDev/minecraft-assets](https://github.com/InventivetalentDev/minecraft-assets) (1.21.4, CORS-safe). Blocks without a real texture fall back to procedural generation using the Canvas 2D API:
 
-- **Flat noise** — uniform base colour with pixel-level random variation
-- **Voronoi** — irregular stone cell pattern (cobblestone variants)
-- **Brick** — configurable running bond pattern with mortar lines
-- **Grain** — horizontal stripe variation (deepslate, sandstone)
-- **Specks** — base colour with contrasting pixel specks (granite, diorite, gilded blackstone)
-- **Wood planks** — horizontal plank strips with edge darkening and grain noise
-- **Leaves** — dense noise with dark shadow patches; azalea variant adds pink flower pixels
+- **Flat noise** — uniform base colour with pixel-level variation
+- **Voronoi** — irregular cell pattern for cobblestone variants
+- **Brick** — running bond pattern with configurable mortar
+- **Grain** — stripe variation for deepslate, sandstone, logs
+- **Specks** — contrasting pixel speckles for granite, diorite, gilded blackstone
+- **Wood planks** — horizontal plank strips with edge darkening
+- **Log bark** — vertical column grain
+- **Log top** — concentric ring end-grain pattern
+- **Leaves** — dense noise with biome tint applied via canvas `multiply` blend
 
-Walls are seeded with `mulberry32`, a fast 32-bit PRNG, so any seed produces the same wall every time. Each block cell uses a unique sub-seed so identical block types never tile visibly.
+Walls are seeded with `mulberry32` (a fast 32-bit PRNG), so any seed always produces the same wall. Each block cell consumes two RNG values so texture variant selection is stable regardless of texture source.
 
 ---
 
 ## Browser Support
 
-Requires `OffscreenCanvas` support — available in all modern browsers (Chrome 69+, Firefox 105+, Safari 16.4+, Edge 79+).
+Requires `OffscreenCanvas` — available in all modern browsers (Chrome 69+, Firefox 105+, Safari 16.4+, Edge 79+).
