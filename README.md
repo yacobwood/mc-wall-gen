@@ -1,4 +1,4 @@
-# Blockwork
+# Blockworks
 
 A browser-based Minecraft wall designer. Pick a block palette, set your dimensions, and export the result as a PNG reference image for your next build.
 
@@ -84,7 +84,7 @@ Load curated palettes from the **Presets** dropdown:
 
 ### Export
 
-Click **Export PNG** to download a lossless PNG named with the current seed (e.g. `blockwork-A3F2C891.png`). Row/column numbers are baked in if the overlay is enabled.
+Click **Export PNG** to download a lossless PNG named with the current seed (e.g. `blockworks-A3F2C891.png`). Row/column numbers are baked in if the overlay is enabled.
 
 ---
 

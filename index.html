@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Blockwork</title>
+  <title>Blockworks</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link href="https://fonts.googleapis.com/css2?family=VT323&display=swap" rel="stylesheet">
   <style>
@@ -231,7 +231,7 @@
 
 <aside id="sidebar">
   <div class="sidebar-header">
-    <h1>Blockwork</h1>
+    <h1>Blockworks</h1>
     <p>Minecraft wall designer by Yacobwood</p>
   </div>
 
@@ -1484,7 +1484,7 @@ function setupEventListeners() {
 
   document.getElementById('btnExport').addEventListener('click', () => {
     const a = document.createElement('a');
-    a.download = `blockwork-${state.seed.toString(16).toUpperCase()}.png`;
+    a.download = `blockworks-${state.seed.toString(16).toUpperCase()}.png`;
     a.href = document.getElementById('wall-canvas').toDataURL('image/png');
     a.click();
   });
