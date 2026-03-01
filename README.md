@@ -4,7 +4,7 @@ A browser-based Minecraft wall designer. Pick a block palette, set your dimensio
 
 **By [Yacobwood](https://github.com/yacobwood)**
 
-![Blockwork screenshot](screenshot.png)
+<img src="Blockwork%20cobble.png" alt="Cobblestone wall example" width="32%"> <img src="Blockwork%20Tuff.png" alt="Tuff wall example" width="32%"> <img src="Blockwork%20Bricks.png" alt="Bricks wall example" width="32%">
 
 ---
 
